@@ -8,6 +8,7 @@ class ContentSpeechRecognizer {
     this.recognition = null;
     this.isRecording = false;
     this.finalTranscript = "";
+    this.interimTranscript = "";
     this.autoPunctuationLevel = "medium";
     this.initialTextLength = 0;
     this.currentLanguage = "ru-RU";
@@ -42,6 +43,9 @@ class ContentSpeechRecognizer {
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === "startRecording") {
+        if (request.autoPunctuation !== undefined) {
+          this.autoPunctuationLevel = request.autoPunctuation;
+        }
         this.startRecording(request.language, request.initialText);
         sendResponse({ success: true });
       } else if (request.action === "stopRecording") {
@@ -166,7 +170,7 @@ class ContentSpeechRecognizer {
     });
   }
 
-  startRecording(language = "ru-RU", initialText = "") {
+  startRecording(language = this.currentLanguage, initialText = "") {
     if (!this.recognition) {
       chrome.runtime.sendMessage({
         action: "recognitionError",
@@ -181,8 +185,9 @@ class ContentSpeechRecognizer {
 
     this.currentLanguage = language;
     this.recognition.lang = language;
-    this.finalTranscript = initialText.trim();
-    this.initialTextLength = this.finalTranscript.length;
+    this.finalTranscript = initialText;
+    this.interimTranscript = "";
+    this.initialTextLength = this.finalTranscript.trim().length;
 
     try {
       this.recognition.start();
@@ -217,6 +222,7 @@ class ContentSpeechRecognizer {
   handleRecognitionEnd() {
     this.isRecording = false;
     console.log("Content script: recognition ended.");
+    this.persistTranscript();
     chrome.runtime.sendMessage({ action: "recordingStopped" });
   }
 
@@ -253,13 +259,35 @@ class ContentSpeechRecognizer {
 
     if (finalSegment) {
       const formattedSegment = this.applyPunctuation(finalSegment);
+      this.ensureTranscriptBoundary(formattedSegment);
       this.finalTranscript += formattedSegment + " ";
     }
+
+    this.ensureTranscriptBoundary(interimTranscript);
+    this.interimTranscript = interimTranscript;
+    this.persistTranscript();
 
     chrome.runtime.sendMessage({
       action: "updateTranscript",
       final: this.finalTranscript,
-      interim: interimTranscript,
+      interim: this.interimTranscript,
+    });
+  }
+
+  ensureTranscriptBoundary(nextText) {
+    if (
+      this.finalTranscript &&
+      nextText &&
+      !/\s$/.test(this.finalTranscript) &&
+      !/^\s/.test(nextText)
+    ) {
+      this.finalTranscript += " ";
+    }
+  }
+
+  persistTranscript() {
+    chrome.storage.local.set({
+      textDraft: this.finalTranscript + this.interimTranscript,
     });
   }
 

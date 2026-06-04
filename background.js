@@ -94,6 +94,19 @@ function sendPasteToTab(tabId, textToPaste) {
   );
 }
 
+function startRecordingInTab(tabId) {
+  return chrome.storage.local
+    .get(["language", "autoPunctuation", "textDraft"])
+    .then((stored) =>
+      chrome.tabs.sendMessage(tabId, {
+        action: "startRecording",
+        language: stored.language || "ru-RU",
+        autoPunctuation: stored.autoPunctuation || "medium",
+        initialText: stored.textDraft || "",
+      }),
+    );
+}
+
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local" || !changes.language) return;
   const lang = changes.language.newValue || "ru-RU";
@@ -134,9 +147,7 @@ chrome.commands.onCommand.addListener((command) => {
 
     if (command === "start_recording") {
       chrome.runtime.sendMessage({ action: "startRecording" }).catch(() => {
-        chrome.tabs
-          .sendMessage(activeTab.id, { action: "startRecording" })
-          .catch(() => {});
+        startRecordingInTab(activeTab.id).catch(() => {});
       });
     } else if (command === "stop_recording") {
       chrome.runtime.sendMessage({ action: "stopRecording" }).catch(() => {

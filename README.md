@@ -40,7 +40,7 @@ The extension includes four punctuation modes:
 | Off    | Automatic punctuation is disabled                |
 | Low    | Minimal punctuation assistance                   |
 | Medium | Balanced punctuation assistance                  |
-| High   | Advanced punctuation with language-specific rules |
+| High   | Advanced punctuation with language-specific rules|
 
 Smart punctuation features:
 
@@ -147,7 +147,7 @@ Main files:
 | File                             | Description                                                   |
 | -------------------------------- | ------------------------------------------------------------- |
 | `manifest.json`                  | Manifest V3 configuration                                     |
-| `background.js`                  | Service worker for commands, menu, notifications, and script injection |
+| `background.js`                  | Service worker for commands, menu, notifications, injection   |
 | `sidepanel.html`                 | Side panel markup                                             |
 | `sidepanel.js`                   | Main side panel logic                                         |
 | `i18n.js`                        | Localization and punctuation rules                            |
@@ -265,19 +265,7 @@ Averixor
 
 ---
 
-
-
-
-
-
-
-
-
-
-
----
-
-# Voice-to-Text Pro 3.4
+## Українська версія
 
 **Voice-to-Text Pro** — це розширення для Google Chrome, яке перетворює мовлення на текст за допомогою **Web Speech API**.
 
@@ -423,10 +411,10 @@ Averixor
 
 Основні файли:
 
-| Файл                             | Опис                                                       |
-| -------------------------------- | ---------------------------------------------------------- |
+| Файл                             | Опис                                                      |
+| -------------------------------- | --------------------------------------------------------- |
 | `manifest.json`                  | Конфігурація Manifest V3                                  |
-| `background.js`                  | Service Worker для команд, меню, сповіщень та інʼєкції скриптів |
+| `background.js`                  | Service Worker для команд, меню, сповіщень та скриптів    |
 | `sidepanel.html`                 | Розмітка бокової панелі                                   |
 | `sidepanel.js`                   | Основна логіка бокової панелі                             |
 | `i18n.js`                        | Локалізація та правила пунктуації                         |

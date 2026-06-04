@@ -9,6 +9,7 @@ class SpeechToTextPro {
     this.isRecording = false;
     this.isPaused = false;
     this.finalTranscript = "";
+    this.interimTranscript = "";
     this.microphoneAccessGranted = false;
     this.recordingStartTime = null;
     this.recordingTimer = null;
@@ -158,6 +159,7 @@ class SpeechToTextPro {
     });
 
     this.output.addEventListener("input", () => {
+      this.syncTranscriptFromOutput();
       this.updateStats();
       this.updateEditorOverlay();
       this.saveTextDraft();
@@ -258,21 +260,58 @@ class SpeechToTextPro {
       }
     };
 
-    this.recognition.onresult = (event) => {
-      let interimTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          this.finalTranscript += this.formatText(transcript);
-        } else {
-          interimTranscript += transcript;
-        }
+    this.recognition.onresult = (event) => this.handleRecognitionResult(event);
+  }
+
+  syncTranscriptFromOutput() {
+    const currentText = this.output.value;
+
+    if (
+      this.interimTranscript &&
+      currentText.endsWith(this.interimTranscript)
+    ) {
+      this.finalTranscript = currentText.slice(
+        0,
+        -this.interimTranscript.length,
+      );
+      return;
+    }
+
+    this.finalTranscript = currentText;
+    this.interimTranscript = "";
+  }
+
+  handleRecognitionResult(event) {
+    let interimTranscript = "";
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        const formattedTranscript = this.formatText(transcript);
+        this.ensureTranscriptBoundary(formattedTranscript);
+        this.finalTranscript += formattedTranscript;
+      } else {
+        interimTranscript += transcript;
       }
-      this.output.value = this.finalTranscript + interimTranscript;
-      this.output.scrollTop = this.output.scrollHeight;
-      this.updateStats();
-      this.updateEditorOverlay();
-    };
+    }
+
+    this.ensureTranscriptBoundary(interimTranscript);
+    this.interimTranscript = interimTranscript;
+    this.output.value = this.finalTranscript + this.interimTranscript;
+    this.output.scrollTop = this.output.scrollHeight;
+    this.updateStats();
+    this.updateEditorOverlay();
+    this.saveTextDraft();
+  }
+
+  ensureTranscriptBoundary(nextText) {
+    if (
+      this.finalTranscript &&
+      nextText &&
+      !/\s$/.test(this.finalTranscript) &&
+      !/^\s/.test(nextText)
+    ) {
+      this.finalTranscript += " ";
+    }
   }
 
   startRecording() {
@@ -290,6 +329,7 @@ class SpeechToTextPro {
     this.recognition.lang = this.languageSelect.value;
     this.currentLanguage = this.languageSelect.value;
     this.finalTranscript = this.output.value;
+    this.interimTranscript = "";
     this.isPaused = false;
     this.isRecording = true;
 
@@ -337,6 +377,7 @@ class SpeechToTextPro {
     this.recognition.lang = this.languageSelect.value;
     this.currentLanguage = this.languageSelect.value;
     this.finalTranscript = this.output.value;
+    this.interimTranscript = "";
     this.isRecording = true;
 
     try {
@@ -569,6 +610,7 @@ class SpeechToTextPro {
   clearText() {
     this.output.value = "";
     this.finalTranscript = "";
+    this.interimTranscript = "";
     this.sessionWordCount = 0;
     this.updateStats();
     this.updateEditorOverlay();
@@ -701,6 +743,7 @@ class SpeechToTextPro {
         if (result.textDraft) {
           this.output.value = result.textDraft;
           this.finalTranscript = result.textDraft;
+          this.interimTranscript = "";
           this.updateStats();
           this.updateEditorOverlay();
         }
@@ -735,10 +778,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   } else if (request.action === "updateTranscript") {
     if (sttAppInstance.output) {
-      sttAppInstance.output.value = request.final + request.interim;
+      sttAppInstance.finalTranscript = request.final || "";
+      sttAppInstance.interimTranscript = request.interim || "";
+      sttAppInstance.output.value =
+        sttAppInstance.finalTranscript + sttAppInstance.interimTranscript;
       sttAppInstance.output.scrollTop = sttAppInstance.output.scrollHeight;
       sttAppInstance.updateStats();
       sttAppInstance.updateEditorOverlay();
+      sttAppInstance.saveTextDraft();
     }
     sendResponse({ success: true });
   } else if (request.action === "recognitionError") {
