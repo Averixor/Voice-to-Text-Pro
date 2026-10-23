@@ -1,67 +1,22 @@
 // ===========================================
-// content.js - content script
-// Speech recognition on the tab (when used) and text paste into page fields.
+// content.js - injected on demand after a user paste gesture
+// Paste transcript into the focused (or last) editable field.
 // ===========================================
 
-class ContentSpeechRecognizer {
+class VoiceToTextPasteHelper {
   constructor() {
-    this.recognition = null;
-    this.isRecording = false;
-    this.finalTranscript = "";
-    this.interimTranscript = "";
-    this.autoPunctuationLevel = "medium";
-    this.initialTextLength = 0;
-    this.currentLanguage = "ru-RU";
     this.lastEditableElement = null;
     this.lastContentEditableRange = null;
 
-    if ("webkitSpeechRecognition" in window) {
-      this.recognition = new webkitSpeechRecognition();
-      this.recognition.continuous = true;
-      this.recognition.interimResults = true;
-      this.setupRecognitionListeners();
-    } else {
-      console.warn(
-        "Content script: Speech Recognition API not supported. Paste is still available.",
-      );
-    }
-
     this.setupEditableTracking();
     this.setupMessageListener();
-    this.loadSettings();
-  }
-
-  setupRecognitionListeners() {
-    if (!this.recognition) return;
-
-    this.recognition.onstart = () => this.handleRecognitionStart();
-    this.recognition.onresult = (event) => this.handleRecognitionResult(event);
-    this.recognition.onerror = (event) => this.handleRecognitionError(event);
-    this.recognition.onend = () => this.handleRecognitionEnd();
   }
 
   setupMessageListener() {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.action === "startRecording") {
-        if (request.autoPunctuation !== undefined) {
-          this.autoPunctuationLevel = request.autoPunctuation;
-        }
-        this.startRecording(request.language, request.initialText);
-        sendResponse({ success: true });
-      } else if (request.action === "stopRecording") {
-        this.stopRecording();
-        sendResponse({ success: true });
-      } else if (request.action === "pasteSelection") {
+      if (request.action === "pasteSelection") {
         const success = this.pasteText(request.textToPaste || "");
         sendResponse({ success });
-      } else if (request.action === "updateSettings") {
-        if (request.autoPunctuation !== undefined) {
-          this.autoPunctuationLevel = request.autoPunctuation;
-        }
-        if (request.language !== undefined) {
-          this.currentLanguage = request.language;
-        }
-        sendResponse({ success: true });
       }
       return true;
     });
@@ -124,13 +79,6 @@ class ContentSpeechRecognizer {
         "url",
         "tel",
         "email",
-        "password",
-        "number",
-        "date",
-        "datetime-local",
-        "month",
-        "time",
-        "week",
       ]);
       return textInputTypes.has(type) && !element.disabled && !element.readOnly;
     }
@@ -163,177 +111,6 @@ class ContentSpeechRecognizer {
     }
   }
 
-  loadSettings() {
-    chrome.storage.local.get(["autoPunctuation", "language"], (result) => {
-      this.autoPunctuationLevel = result.autoPunctuation || "medium";
-      this.currentLanguage = result.language || "ru-RU";
-    });
-  }
-
-  startRecording(language = this.currentLanguage, initialText = "") {
-    if (!this.recognition) {
-      chrome.runtime.sendMessage({
-        action: "recognitionError",
-        error: "not-supported",
-      });
-      return;
-    }
-
-    if (this.isRecording) {
-      this.stopRecording();
-    }
-
-    this.currentLanguage = language;
-    this.recognition.lang = language;
-    this.finalTranscript = initialText;
-    this.interimTranscript = "";
-    this.initialTextLength = this.finalTranscript.trim().length;
-
-    try {
-      this.recognition.start();
-      this.isRecording = true;
-      chrome.runtime.sendMessage({
-        action: "recordingStarted",
-        language: language,
-        type: "recordingStarted",
-      });
-    } catch (e) {
-      console.error("Failed to start recognition:", e);
-      chrome.runtime.sendMessage({
-        action: "recognitionError",
-        error: "start-failed",
-      });
-      this.isRecording = false;
-    }
-  }
-
-  stopRecording() {
-    if (this.recognition && this.isRecording) {
-      this.isRecording = false;
-      this.recognition.stop();
-    }
-  }
-
-  handleRecognitionStart() {
-    this.isRecording = true;
-    console.log("Content script: recognition started.");
-  }
-
-  handleRecognitionEnd() {
-    this.isRecording = false;
-    console.log("Content script: recognition ended.");
-    this.persistTranscript();
-    chrome.runtime.sendMessage({ action: "recordingStopped" });
-  }
-
-  handleRecognitionError(event) {
-    console.error("Content script: recognition error:", event.error);
-    chrome.runtime.sendMessage({
-      action: "recognitionError",
-      error: event.error,
-    });
-
-    if (
-      this.isRecording &&
-      (event.error === "no-speech" || event.error === "audio-capture")
-    ) {
-      this.isRecording = false;
-    } else if (event.error === "not-allowed") {
-      this.isRecording = false;
-      this.recognition.stop();
-    }
-  }
-
-  handleRecognitionResult(event) {
-    let interimTranscript = "";
-    let finalSegment = "";
-
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      let transcript = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        finalSegment += transcript;
-      } else {
-        interimTranscript += transcript;
-      }
-    }
-
-    if (finalSegment) {
-      const formattedSegment = this.applyPunctuation(finalSegment);
-      this.ensureTranscriptBoundary(formattedSegment);
-      this.finalTranscript += formattedSegment + " ";
-    }
-
-    this.ensureTranscriptBoundary(interimTranscript);
-    this.interimTranscript = interimTranscript;
-    this.persistTranscript();
-
-    chrome.runtime.sendMessage({
-      action: "updateTranscript",
-      final: this.finalTranscript,
-      interim: this.interimTranscript,
-    });
-  }
-
-  ensureTranscriptBoundary(nextText) {
-    if (
-      this.finalTranscript &&
-      nextText &&
-      !/\s$/.test(this.finalTranscript) &&
-      !/^\s/.test(nextText)
-    ) {
-      this.finalTranscript += " ";
-    }
-  }
-
-  persistTranscript() {
-    chrome.storage.local.set({
-      textDraft: this.finalTranscript + this.interimTranscript,
-    });
-  }
-
-  applyPunctuation(text) {
-    if (this.autoPunctuationLevel === "off") {
-      return text;
-    }
-
-    let formattedText = text.trim();
-    if (!formattedText) return formattedText;
-
-    const lastFinalChar = this.finalTranscript.trim().slice(-1);
-    const isStartOfSentence =
-      this.finalTranscript.trim().length === this.initialTextLength ||
-      (this.finalTranscript.length > 0 &&
-        [".", "?", "!", ":", ";", "…", "\n"].includes(lastFinalChar));
-
-    if (isStartOfSentence) {
-      formattedText =
-        formattedText.charAt(0).toUpperCase() + formattedText.slice(1);
-    }
-
-    const lastChar = formattedText.slice(-1);
-    if (![".", ",", "?", "!", ";", ":", "…"].includes(lastChar)) {
-      if (this.autoPunctuationLevel === "low") {
-        formattedText += ".";
-      } else if (
-        this.autoPunctuationLevel === "medium" &&
-        formattedText.length > 8
-      ) {
-        formattedText += ".";
-      } else if (this.autoPunctuationLevel === "high") {
-        const pack = globalThis.AppI18n?.getPack?.(this.currentLanguage);
-        if (pack?.punctQuestionRe?.test?.(formattedText)) {
-          formattedText += "?";
-        } else if (pack?.punctExclaimRe?.test?.(formattedText)) {
-          formattedText += "!";
-        } else if (formattedText.length > 5) {
-          formattedText += ".";
-        }
-      }
-    }
-
-    return formattedText.trim();
-  }
-
   getPasteTarget() {
     const activeEditable = this.findEditableElement(document.activeElement);
     if (activeEditable) {
@@ -350,6 +127,59 @@ class ContentSpeechRecognizer {
     }
 
     return null;
+  }
+
+  insertIntoContentEditable(target, textToPaste) {
+    const selection = window.getSelection();
+    let range = null;
+
+    if (
+      this.lastContentEditableRange &&
+      (target.contains(
+        this.lastContentEditableRange.commonAncestorContainer,
+      ) ||
+        target === this.lastContentEditableRange.commonAncestorContainer)
+    ) {
+      range = this.lastContentEditableRange.cloneRange();
+    } else if (selection && selection.rangeCount > 0) {
+      const currentRange = selection.getRangeAt(0);
+      if (
+        target.contains(currentRange.commonAncestorContainer) ||
+        target === currentRange.commonAncestorContainer
+      ) {
+        range = currentRange;
+      }
+    }
+
+    if (range && selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    const activeRange =
+      selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+    if (activeRange) {
+      activeRange.deleteContents();
+      const textNode = document.createTextNode(textToPaste);
+      activeRange.insertNode(textNode);
+      activeRange.setStartAfter(textNode);
+      activeRange.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(activeRange);
+      return true;
+    }
+
+    try {
+      if (document.execCommand("insertText", false, textToPaste)) {
+        return true;
+      }
+    } catch {
+      // Fall through to append.
+    }
+
+    target.appendChild(document.createTextNode(textToPaste));
+    return true;
   }
 
   pasteText(textToPaste) {
@@ -376,7 +206,7 @@ class ContentSpeechRecognizer {
             typeof target.selectionEnd === "number"
               ? target.selectionEnd
               : start;
-        } catch (error) {
+        } catch {
           start = target.value.length;
           end = start;
         }
@@ -387,7 +217,7 @@ class ContentSpeechRecognizer {
           } else {
             throw new Error("setRangeText is not available");
           }
-        } catch (error) {
+        } catch {
           const originalValue = target.value || "";
           target.value =
             originalValue.substring(0, start) +
@@ -397,7 +227,7 @@ class ContentSpeechRecognizer {
           try {
             target.selectionStart = newCursorPos;
             target.selectionEnd = newCursorPos;
-          } catch (selectionError) {
+          } catch {
             // Some input[type] elements do not allow programmatic selection.
           }
         }
@@ -416,66 +246,24 @@ class ContentSpeechRecognizer {
         target.getAttribute("contenteditable") === "true"
       ) {
         target.focus();
-        const selection = window.getSelection();
-        let range = null;
-
-        if (
-          this.lastContentEditableRange &&
-          (target.contains(
-            this.lastContentEditableRange.commonAncestorContainer,
-          ) ||
-            target === this.lastContentEditableRange.commonAncestorContainer)
-        ) {
-          range = this.lastContentEditableRange.cloneRange();
-        } else if (selection && selection.rangeCount > 0) {
-          const currentRange = selection.getRangeAt(0);
-          if (
-            target.contains(currentRange.commonAncestorContainer) ||
-            target === currentRange.commonAncestorContainer
-          ) {
-            range = currentRange;
-          }
+        success = this.insertIntoContentEditable(target, textToPaste);
+        if (success) {
+          target.dispatchEvent(
+            new InputEvent("input", {
+              bubbles: true,
+              inputType: "insertText",
+              data: textToPaste,
+            }),
+          );
         }
-
-        if (range) {
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
-
-        if (!document.execCommand("insertText", false, textToPaste)) {
-          const activeRange =
-            selection && selection.rangeCount > 0
-              ? selection.getRangeAt(0)
-              : null;
-          if (activeRange) {
-            activeRange.deleteContents();
-            const textNode = document.createTextNode(textToPaste);
-            activeRange.insertNode(textNode);
-            activeRange.setStartAfter(textNode);
-            activeRange.setEndAfter(textNode);
-            selection.removeAllRanges();
-            selection.addRange(activeRange);
-          } else {
-            target.appendChild(document.createTextNode(textToPaste));
-          }
-        }
-
-        target.dispatchEvent(
-          new InputEvent("input", {
-            bubbles: true,
-            inputType: "insertText",
-            data: textToPaste,
-          }),
-        );
-        success = true;
       }
     }
 
-    chrome.runtime.sendMessage({ action: "pasteCompleted", success: success });
+    chrome.runtime.sendMessage({ action: "pasteCompleted", success });
     return success;
   }
 }
 
 if (!globalThis.__voiceToTextProContentInstance) {
-  globalThis.__voiceToTextProContentInstance = new ContentSpeechRecognizer();
+  globalThis.__voiceToTextProContentInstance = new VoiceToTextPasteHelper();
 }

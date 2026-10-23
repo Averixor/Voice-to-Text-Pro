@@ -47,7 +47,7 @@ Smart punctuation features:
 - Automatic capitalization after sentence endings.
 - Detection of `.`, `?`, `!`, `:`, `;`, `…`, and line breaks.
 - Language-specific question and exclamation patterns, especially in High mode.
-- Shared punctuation logic for both the side panel and the content script.
+- Language-specific regex packs live in `i18n.js`; the side panel applies them when formatting recognition results.
 
 ### UI Localization
 
@@ -97,7 +97,10 @@ The spell check language follows the selected recognition language.
 | `Ctrl+C` in the field | Copy text                      |
 | `Ctrl+Del`            | Clear text                     |
 
-On macOS, Chrome may use `Command` instead of `Ctrl` where applicable.
+On macOS:
+
+- **Chrome commands** (`start` / `stop` / `toggle panel`) use `Command` instead of `Ctrl` (see `manifest.json` `mac` suggested keys).
+- **In-panel shortcuts** (Start, Stop, Insert, Copy, Clear) accept either `Ctrl` or `Command`.
 
 ---
 
@@ -125,18 +128,30 @@ On macOS, Chrome may use `Command` instead of `Ctrl` where applicable.
 
 All settings and the current draft are saved automatically.
 
+On first use, accept the in-panel privacy notice before recording. Speech recognition uses Google’s Web Speech service over the internet.
+
+---
+
+## Privacy
+
+- **Speech:** audio is processed by Google’s Web Speech API (network required).
+- **Drafts:** stored only in `chrome.storage.local` on the device.
+- **Page access:** scripts are injected only after Insert or the context-menu paste action; optional host access may be requested for that site.
+- **In-extension policy:** open `privacy.html` from the side-panel notice (or via `chrome.runtime.getURL("privacy.html")`).
+- **Chrome Web Store:** the listing Privacy Policy field needs a public HTTPS URL — host this policy (or an equivalent page) and paste that URL into the store form.
+
 ---
 
 ## Local Storage
 
 The extension uses `chrome.storage.local` for settings and draft persistence.
 
-| Key               | Description                                          |
-| ----------------- | ---------------------------------------------------- |
-| `language`        | Selected BCP 47 language code                        |
-| `autoPunctuation` | Punctuation level: `off`, `low`, `medium`, or `high` |
-| `textDraft`       | Current text draft                                   |
-| `sidePanelOpen`   | Side panel state                                     |
+| Key                      | Description                                          |
+| ------------------------ | ---------------------------------------------------- |
+| `language`               | Selected BCP 47 language code                        |
+| `autoPunctuation`        | Punctuation level: `off`, `low`, `medium`, or `high` |
+| `textDraft`              | Current text draft                                   |
+| `privacyConsentAccepted` | User accepted the in-panel privacy notice            |
 
 ---
 
@@ -151,9 +166,11 @@ Main files:
 | `sidepanel.html`                 | Side panel markup                                             |
 | `sidepanel.js`                   | Main side panel logic                                         |
 | `i18n.js`                        | Localization and punctuation rules                            |
-| `content.js`                     | Text insertion into web pages                                 |
+| `content.js`                     | On-demand paste helper (injected after a user gesture)        |
+| `privacy.html`                   | Privacy Policy (package copy; host publicly for CWS)          |
 | `styles.css`                     | Styles and animations                                         |
 | `icons/`                         | Extension icons                                               |
+| `LICENSE`                        | MIT License                                                   |
 | `README.md`                      | Project overview and usage guide                              |
 | `CHANGELOG.md`                   | Version history                                               |
 | `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Release and manual testing checklist                          |
@@ -165,10 +182,10 @@ Main files:
 The extension separates responsibilities clearly:
 
 - **Side Panel** — speech recognition, editing, settings, and interface.
-- **Content Script** — inserting text into web pages.
+- **Content script (on demand)** — inserting text into web pages after Insert or context-menu paste.
 - **Shared storage** — data exchange through `chrome.storage.local`.
 
-If the active tab does not already have the required content script, the service worker can inject `i18n.js` and `content.js` using `chrome.scripting`.
+There is no permanent `content_scripts` registration. After a user gesture, the service worker injects `i18n.js` and `content.js` with `chrome.scripting` when needed (and may request optional host access for that origin).
 
 ---
 
@@ -255,7 +272,7 @@ Recommended release archive name:
 
 ## License
 
-MIT License
+MIT License — see the [`LICENSE`](LICENSE) file in this repository.
 
 ---
 
@@ -314,7 +331,7 @@ Averixor
 - Автоматична капіталізація після завершення речення.
 - Розпізнавання `.`, `?`, `!`, `:`, `;`, `…` та переходів на новий рядок.
 - Мовнозалежні шаблони питань і окликів, особливо в режимі High.
-- Єдина логіка пунктуації для бокової панелі та content script.
+- Мовнозалежні regex-паки в `i18n.js`; бокова панель застосовує їх під час форматування результатів розпізнавання.
 
 ### Локалізація інтерфейсу
 
@@ -364,7 +381,10 @@ Averixor
 | `Ctrl+C` у полі        | Копіювати текст                    |
 | `Ctrl+Del`             | Очистити текст                     |
 
-На macOS Chrome може використовувати `Command` замість `Ctrl`.
+На macOS:
+
+- **Chrome commands** (`start` / `stop` / `toggle panel`) використовують `Command` замість `Ctrl` (див. `mac` у `manifest.json`).
+- **Скорочення всередині панелі** (Start, Stop, Insert, Copy, Clear) приймають і `Ctrl`, і `Command`.
 
 ---
 
@@ -392,18 +412,30 @@ Averixor
 
 Усі налаштування та поточна чернетка зберігаються автоматично.
 
+Під час першого запуску прийміть сповіщення про конфіденційність у панелі перед записом. Розпізнавання мовлення використовує сервіс Google Web Speech через інтернет.
+
+---
+
+## Конфіденційність
+
+- **Мовлення:** аудіо обробляє Google Web Speech API (потрібна мережа).
+- **Чернетки:** лише в `chrome.storage.local` на пристрої.
+- **Доступ до сторінок:** скрипти інʼєктуються лише після Insert або пункту контекстного меню; за потреби запитується optional host access.
+- **Політика в пакеті:** `privacy.html` (або `chrome.runtime.getURL("privacy.html")`).
+- **Chrome Web Store:** у лістингу потрібен публічний HTTPS URL політики — розмістіть цей текст (або еквівалент) і вставте URL у форму магазину.
+
 ---
 
 ## Локальне сховище
 
 Розширення використовує `chrome.storage.local` для налаштувань і збереження чернетки.
 
-| Ключ              | Опис                                                 |
-| ----------------- | ---------------------------------------------------- |
-| `language`        | Обраний мовний код BCP 47                            |
-| `autoPunctuation` | Рівень пунктуації: `off`, `low`, `medium` або `high` |
-| `textDraft`       | Поточна текстова чернетка                            |
-| `sidePanelOpen`   | Стан бокової панелі                                  |
+| Ключ                     | Опис                                                 |
+| ------------------------ | ---------------------------------------------------- |
+| `language`               | Обраний мовний код BCP 47                            |
+| `autoPunctuation`        | Рівень пунктуації: `off`, `low`, `medium` або `high` |
+| `textDraft`              | Поточна текстова чернетка                            |
+| `privacyConsentAccepted` | Користувач прийняв сповіщення про конфіденційність   |
 
 ---
 
@@ -418,9 +450,11 @@ Averixor
 | `sidepanel.html`                 | Розмітка бокової панелі                                   |
 | `sidepanel.js`                   | Основна логіка бокової панелі                             |
 | `i18n.js`                        | Локалізація та правила пунктуації                         |
-| `content.js`                     | Вставка тексту на веб-сторінки                            |
+| `content.js`                     | Paste-helper за жестом користувача                        |
+| `privacy.html`                   | Політика конфіденційності (для CWS потрібен публічний URL)|
 | `styles.css`                     | Стилі та анімації                                         |
 | `icons/`                         | Іконки розширення                                         |
+| `LICENSE`                        | Ліцензія MIT                                              |
 | `README.md`                      | Огляд проєкту та інструкція користувача                   |
 | `CHANGELOG.md`                   | Історія змін                                              |
 | `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Чеклист релізу та ручного тестування                      |
@@ -432,10 +466,10 @@ Averixor
 Розширення чітко розділяє відповідальність:
 
 - **Side Panel** — розпізнавання мовлення, редагування, налаштування та інтерфейс.
-- **Content Script** — вставка тексту на веб-сторінки.
+- **Content script (за потреби)** — вставка тексту після Insert або контекстного меню.
 - **Shared storage** — обмін даними через `chrome.storage.local`.
 
-Якщо на активній вкладці ще немає потрібного content script, service worker може інʼєктувати `i18n.js` і `content.js` через `chrome.scripting`.
+Постійної реєстрації `content_scripts` немає. Після жесту користувача service worker за потреби інʼєктує `i18n.js` і `content.js` через `chrome.scripting` (і може запитати optional host access для цього origin).
 
 ---
 
@@ -522,7 +556,7 @@ Averixor
 
 ## Ліцензія
 
-MIT License
+MIT License — див. файл [`LICENSE`](LICENSE) у репозиторії.
 
 ---
 

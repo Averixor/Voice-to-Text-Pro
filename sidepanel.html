@@ -292,6 +292,38 @@
 
       <section
         class="instructions-section"
+        id="privacyConsent"
+        style="display: none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="privacyHeading"
+      >
+        <div class="privacy-card">
+          <div class="privacy-header">
+            <h3 id="privacyHeading">Privacy notice</h3>
+          </div>
+          <p id="privacyBody" class="privacy-body">
+            Speech recognition uses Google’s Web Speech service over the
+            internet. Drafts are stored locally in chrome.storage. Recording
+            starts only after you accept.
+          </p>
+          <p class="privacy-link-wrap">
+            <a
+              id="privacyPolicyLink"
+              href="privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Privacy Policy</a
+            >
+          </p>
+          <button type="button" class="control-btn primary-btn" id="privacyAcceptBtn">
+            <span>Accept and continue</span>
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="instructions-section"
         id="instructions"
         style="display: none"
         role="dialog"
@@ -328,7 +360,7 @@
 
       <footer class="app-footer">
         <div class="footer-content">
-          <div class="version">v3.4 • Voice to Text Pro</div>
+          <div class="version">v3.4.1 • Voice to Text Pro</div>
           <div class="footer-stats">
             <div class="stat-item" id="sessionStats">
               <span>Session: 0 words</span>

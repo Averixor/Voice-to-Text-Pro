@@ -20,7 +20,11 @@ class SpeechToTextPro {
     this.saveTimeout = null;
     this._transientStatusTimer = null;
 
+    this.privacyConsentAccepted = false;
+    this.sidePanelPort = null;
+
     this.initializeElements();
+    this.connectSidePanelPort();
     this.applyAppLocale();
     this.setupEventListeners();
     this.loadSavedSettings();
@@ -28,6 +32,14 @@ class SpeechToTextPro {
     this.setupSpellCheck();
     this.updateStats();
     this.updateEditorOverlay();
+  }
+
+  connectSidePanelPort() {
+    try {
+      this.sidePanelPort = chrome.runtime.connect({ name: "sidePanel" });
+    } catch (error) {
+      console.error("Failed to connect side panel port:", error);
+    }
   }
 
   initializeElements() {
@@ -46,6 +58,9 @@ class SpeechToTextPro {
     this.languageSelect = document.getElementById("language");
     this.autoPunctuationSelect = document.getElementById("autoPunctuation");
     this.instructions = document.getElementById("instructions");
+    this.privacyConsent = document.getElementById("privacyConsent");
+    this.privacyAcceptBtn = document.getElementById("privacyAcceptBtn");
+    this.privacyPolicyLink = document.getElementById("privacyPolicyLink");
     this.sessionStats = document.getElementById("sessionStats");
     this.editorOverlay = document.getElementById("editorOverlay");
     this.waveContainer = document.getElementById("waveContainer");
@@ -127,6 +142,16 @@ class SpeechToTextPro {
       if (lis[i] && txt) lis[i].textContent = txt;
     });
 
+    setText(document.getElementById("privacyHeading"), p.privacyTitle);
+    setText(document.getElementById("privacyBody"), p.privacyBody);
+    if (this.privacyAcceptBtn) {
+      setText(this.privacyAcceptBtn.querySelector("span"), p.privacyAccept);
+    }
+    if (this.privacyPolicyLink) {
+      this.privacyPolicyLink.textContent = p.privacyPolicyLink;
+      this.privacyPolicyLink.href = chrome.runtime.getURL("privacy.html");
+    }
+
     setText(q(".footer-content .version"), p.footerVersion);
 
     this.setupSpellCheck();
@@ -147,6 +172,11 @@ class SpeechToTextPro {
     this.copyBtn.addEventListener("click", () => this.copyToClipboard());
     this.clearBtn.addEventListener("click", () => this.clearText());
     this.closeBtn.addEventListener("click", () => this.closeSidePanel());
+    if (this.privacyAcceptBtn) {
+      this.privacyAcceptBtn.addEventListener("click", () =>
+        this.acceptPrivacyConsent(),
+      );
+    }
 
     this.languageSelect.addEventListener("change", () => {
       this.applyAppLocale();
@@ -155,7 +185,6 @@ class SpeechToTextPro {
     this.autoPunctuationSelect.addEventListener("change", (e) => {
       this.autoPunctuationLevel = e.target.value;
       this.saveSettings();
-      this.updateContentScriptSettings();
     });
 
     this.output.addEventListener("input", () => {
@@ -315,6 +344,12 @@ class SpeechToTextPro {
   }
 
   startRecording() {
+    if (!this.privacyConsentAccepted) {
+      this.showPrivacyConsent();
+      this.showTransientStatus(this.pack.privacyRequired, 2500, true);
+      return;
+    }
+
     if (this.isPaused) {
       this.resumeRecording();
       return;
@@ -368,6 +403,12 @@ class SpeechToTextPro {
   }
 
   resumeRecording() {
+    if (!this.privacyConsentAccepted) {
+      this.showPrivacyConsent();
+      this.showTransientStatus(this.pack.privacyRequired, 2500, true);
+      return;
+    }
+
     if (!this.recognition) {
       this.initRecognition();
     }
@@ -419,11 +460,6 @@ class SpeechToTextPro {
       return;
     }
 
-    const pastePayload = {
-      action: "pasteSelection",
-      textToPaste: textToInsert,
-    };
-
     const handlePasteResponse = (response) => {
       if (response?.success) {
         this.showTransientStatus(
@@ -434,29 +470,31 @@ class SpeechToTextPro {
       }
     };
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const activeTab = tabs[0];
-      if (!activeTab?.id) {
-        this.showTransientStatus(this.pack.toastNoTab);
-        return;
-      }
+    const requestPaste = () =>
+      chrome.runtime.sendMessage({
+        action: "pasteToActiveTab",
+        textToPaste: textToInsert,
+      });
 
-      chrome.tabs
-        .sendMessage(activeTab.id, pastePayload)
-        .then(handlePasteResponse)
-        .catch(() => {
-          chrome.scripting
-            .executeScript({
-              target: { tabId: activeTab.id },
-              files: ["i18n.js", "content.js"],
-            })
-            .then(() => chrome.tabs.sendMessage(activeTab.id, pastePayload))
-            .then(handlePasteResponse)
-            .catch(() => {
-              this.showTransientStatus(this.pack.toastPasteFail, 2500, true);
-            });
-        });
-    });
+    requestPaste()
+      .then(async (response) => {
+        if (
+          response?.needsHostAccess &&
+          response.originPattern &&
+          chrome.permissions?.request
+        ) {
+          const granted = await chrome.permissions.request({
+            origins: [response.originPattern],
+          });
+          if (granted) {
+            return requestPaste().then(handlePasteResponse);
+          }
+        }
+        handlePasteResponse(response);
+      })
+      .catch(() => {
+        this.showTransientStatus(this.pack.toastPasteFail, 2500, true);
+      });
   }
 
   startTimer() {
@@ -602,9 +640,39 @@ class SpeechToTextPro {
   }
 
   copyToClipboard() {
+    const text = this.output.value;
+    const done = () => this.showTransientStatus(this.pack.toastCopied);
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {
+        this.output.select();
+        document.execCommand("copy");
+        done();
+      });
+      return;
+    }
+
     this.output.select();
     document.execCommand("copy");
-    this.showTransientStatus(this.pack.toastCopied);
+    done();
+  }
+
+  showPrivacyConsent() {
+    if (this.privacyConsent) {
+      this.privacyConsent.style.display = "flex";
+    }
+  }
+
+  hidePrivacyConsent() {
+    if (this.privacyConsent) {
+      this.privacyConsent.style.display = "none";
+    }
+  }
+
+  acceptPrivacyConsent() {
+    this.privacyConsentAccepted = true;
+    chrome.storage.local.set({ privacyConsentAccepted: true });
+    this.hidePrivacyConsent();
   }
 
   clearText() {
@@ -659,48 +727,32 @@ class SpeechToTextPro {
     chrome.runtime.sendMessage({ type: "recordingStarted" }).catch(() => {});
   }
 
-  updateContentScriptSettings() {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0] && tabs[0].id) {
-        chrome.tabs
-          .sendMessage(tabs[0].id, {
-            action: "updateSettings",
-            autoPunctuation: this.autoPunctuationLevel,
-            language: this.languageSelect.value,
-          })
-          .catch(() => {});
-      }
-    });
-  }
-
   handleGlobalKeyboardShortcuts(e) {
     if (e.repeat) return;
 
-    if (
-      e.ctrlKey &&
-      e.code === "KeyC" &&
-      document.activeElement === this.output
-    ) {
+    const mod = e.ctrlKey || e.metaKey;
+
+    if (mod && e.code === "KeyC" && document.activeElement === this.output) {
       this.copyToClipboard();
       e.preventDefault();
     }
 
-    if (e.ctrlKey && e.code === "Delete") {
+    if (mod && e.code === "Delete") {
       this.clearText();
       e.preventDefault();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.code === "Digit1") {
+    if (mod && e.shiftKey && e.code === "Digit1") {
       this.startRecording();
       e.preventDefault();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.code === "Digit2") {
+    if (mod && e.shiftKey && e.code === "Digit2") {
       this.stopRecording();
       e.preventDefault();
     }
 
-    if (e.ctrlKey && e.shiftKey && e.code === "KeyI") {
+    if (mod && e.shiftKey && e.code === "KeyI") {
       this.insertTextToActiveField();
       e.preventDefault();
     }
@@ -713,7 +765,6 @@ class SpeechToTextPro {
       textDraft: this.output.value,
     };
     chrome.storage.local.set(settings);
-    this.updateContentScriptSettings();
   }
 
   saveTextDraft() {
@@ -727,7 +778,7 @@ class SpeechToTextPro {
 
   loadSavedSettings() {
     chrome.storage.local.get(
-      ["language", "autoPunctuation", "textDraft"],
+      ["language", "autoPunctuation", "textDraft", "privacyConsentAccepted"],
       (result) => {
         if (result.language) {
           this.languageSelect.value = result.language;
@@ -746,6 +797,13 @@ class SpeechToTextPro {
           this.interimTranscript = "";
           this.updateStats();
           this.updateEditorOverlay();
+        }
+
+        this.privacyConsentAccepted = Boolean(result.privacyConsentAccepted);
+        if (!this.privacyConsentAccepted) {
+          this.showPrivacyConsent();
+        } else {
+          this.hidePrivacyConsent();
         }
 
         if (this.recognition) {

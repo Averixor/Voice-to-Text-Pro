@@ -1,6 +1,6 @@
 // ===========================================
 // background.js - service worker
-// Extension state, commands, side panel, context menu, notifications, paste.
+// Commands, side panel ports, context menu, notifications, on-demand paste inject.
 // ===========================================
 
 const CONTEXT_MENU_I18N = {
@@ -59,6 +59,9 @@ const RECORDING_STARTED_NOTIFY = {
   },
 };
 
+/** @type {Set<chrome.runtime.Port>} */
+const sidePanelPorts = new Set();
+
 function notifyStringsForLanguage(code) {
   return RECORDING_STARTED_NOTIFY[code] || RECORDING_STARTED_NOTIFY["en-US"];
 }
@@ -78,34 +81,103 @@ function createOrRefreshContextMenu(languageCode) {
   });
 }
 
-function sendPasteToTab(tabId, textToPaste) {
+function originFromTabUrl(url) {
+  if (!url || !/^https?:/i.test(url)) return null;
+  try {
+    return new URL(url).origin + "/*";
+  } catch {
+    return null;
+  }
+}
+
+function injectContentScripts(tabId) {
+  return chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["i18n.js", "content.js"],
+  });
+}
+
+function deliverPaste(tabId, textToPaste) {
   const payload = {
     action: "pasteSelection",
     textToPaste,
   };
-
-  return chrome.tabs.sendMessage(tabId, payload).catch(() =>
-    chrome.scripting
-      .executeScript({
-        target: { tabId },
-        files: ["i18n.js", "content.js"],
-      })
-      .then(() => chrome.tabs.sendMessage(tabId, payload)),
-  );
+  return chrome.tabs.sendMessage(tabId, payload);
 }
 
-function startRecordingInTab(tabId) {
-  return chrome.storage.local
-    .get(["language", "autoPunctuation", "textDraft"])
-    .then((stored) =>
-      chrome.tabs.sendMessage(tabId, {
-        action: "startRecording",
-        language: stored.language || "ru-RU",
-        autoPunctuation: stored.autoPunctuation || "medium",
-        initialText: stored.textDraft || "",
-      }),
-    );
+/**
+ * Paste after a user gesture: message → inject → optional host grant → retry.
+ * @param {number} tabId
+ * @param {string} textToPaste
+ * @param {{ requestPermission?: boolean, tabUrl?: string }} [options]
+ */
+async function sendPasteToTab(tabId, textToPaste, options = {}) {
+  const requestPermission = options.requestPermission !== false;
+  const tabUrl = options.tabUrl;
+
+  try {
+    const response = await deliverPaste(tabId, textToPaste);
+    return { success: Boolean(response?.success) };
+  } catch {
+    // No receiver yet — inject, then retry.
+  }
+
+  try {
+    await injectContentScripts(tabId);
+    const response = await deliverPaste(tabId, textToPaste);
+    return { success: Boolean(response?.success) };
+  } catch (injectError) {
+    const originPattern = originFromTabUrl(tabUrl);
+    if (requestPermission && originPattern && chrome.permissions?.request) {
+      const granted = await chrome.permissions.request({
+        origins: [originPattern],
+      });
+      if (!granted) {
+        return { success: false, needsHostAccess: true, originPattern };
+      }
+
+      await injectContentScripts(tabId);
+      const response = await deliverPaste(tabId, textToPaste);
+      return { success: Boolean(response?.success) };
+    }
+
+    return {
+      success: false,
+      needsHostAccess: Boolean(originPattern),
+      originPattern: originPattern || undefined,
+      error: String(injectError?.message || injectError),
+    };
+  }
 }
+
+function openSidePanelForTab(tabId) {
+  return chrome.sidePanel.open({ tabId }).catch(() => {});
+}
+
+function closeSidePanelForTab(tabId) {
+  return chrome.sidePanel
+    .setOptions({ tabId, enabled: false })
+    .then(() =>
+      chrome.sidePanel.setOptions({ tabId, enabled: true }).catch(() => {}),
+    )
+    .catch(() => {});
+}
+
+function isSidePanelConnected() {
+  return sidePanelPorts.size > 0;
+}
+
+function relayToSidePanel(message) {
+  return chrome.runtime.sendMessage(message);
+}
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "sidePanel") return;
+  sidePanelPorts.add(port);
+  port.onDisconnect.addListener(() => {
+    sidePanelPorts.delete(port);
+  });
+});
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local" || !changes.language) return;
@@ -118,13 +190,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   });
 });
 
-// --- 1. Install & startup ---
-
 chrome.runtime.onInstalled.addListener(() => {
-  console.log(
-    "Voice to Text Pro installed. Configuring context menu and side panel behavior.",
-  );
-
   chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) =>
@@ -135,10 +201,8 @@ chrome.runtime.onInstalled.addListener(() => {
     createOrRefreshContextMenu(stored.language || "ru-RU");
   });
 
-  chrome.storage.local.set({ sidePanelOpen: false });
+  chrome.storage.local.remove("sidePanelOpen");
 });
-
-// --- 2. Keyboard commands ---
 
 chrome.commands.onCommand.addListener((command) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -146,64 +210,71 @@ chrome.commands.onCommand.addListener((command) => {
     if (!activeTab || !activeTab.id) return;
 
     if (command === "start_recording") {
-      chrome.runtime.sendMessage({ action: "startRecording" }).catch(() => {
-        startRecordingInTab(activeTab.id).catch(() => {});
+      relayToSidePanel({ action: "startRecording" }).catch(() => {
+        openSidePanelForTab(activeTab.id);
       });
     } else if (command === "stop_recording") {
-      chrome.runtime.sendMessage({ action: "stopRecording" }).catch(() => {
-        chrome.tabs
-          .sendMessage(activeTab.id, { action: "stopRecording" })
-          .catch(() => {});
+      relayToSidePanel({ action: "stopRecording" }).catch(() => {
+        openSidePanelForTab(activeTab.id);
       });
     } else if (command === "toggle_side_panel") {
-      chrome.storage.local.get("sidePanelOpen", (result) => {
-        if (result.sidePanelOpen) {
-          chrome.sidePanel
-            .setOptions({ tabId: activeTab.id, enabled: false })
-            .catch(() => {});
-          chrome.storage.local.set({ sidePanelOpen: false });
-        } else {
-          chrome.sidePanel.open({ tabId: activeTab.id }).catch(() => {});
-          chrome.storage.local.set({ sidePanelOpen: true });
-        }
-      });
+      if (isSidePanelConnected()) {
+        closeSidePanelForTab(activeTab.id);
+      } else {
+        openSidePanelForTab(activeTab.id);
+      }
     }
   });
 });
 
-// --- 3. Context menu ---
-
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "pasteTranscript" && tab && tab.id) {
-    chrome.storage.local.get("textDraft", (result) => {
-      const textToPaste = result.textDraft || "";
-      if (textToPaste) {
-        sendPasteToTab(tab.id, textToPaste).catch((error) =>
-          console.error("Context menu paste failed:", error),
-        );
-      }
-    });
-  }
-});
+  if (info.menuItemId !== "pasteTranscript" || !tab?.id) return;
 
-// --- 4. Runtime messages ---
+  chrome.storage.local.get("textDraft", (result) => {
+    const textToPaste = result.textDraft || "";
+    if (!textToPaste) return;
+
+    sendPasteToTab(tab.id, textToPaste, {
+      requestPermission: true,
+      tabUrl: tab.url,
+    }).catch((error) => console.error("Context menu paste failed:", error));
+  });
+});
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "closeSidePanel") {
-    chrome.storage.local.set({ sidePanelOpen: false });
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
-        chrome.sidePanel
-          .setOptions({ tabId: tabs[0].id, enabled: false })
-          .then(() => {
-            chrome.sidePanel
-              .setOptions({ tabId: tabs[0].id, enabled: true })
-              .catch(() => {});
-          })
-          .catch(() => {});
+        closeSidePanelForTab(tabs[0].id).finally(() => {
+          sendResponse({ success: true });
+        });
+      } else {
+        sendResponse({ success: true });
       }
     });
-    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === "pasteToActiveTab") {
+    const textToPaste = request.textToPaste || "";
+    // Panel must call chrome.permissions.request itself (user gesture).
+    const fromExtensionPage = Boolean(
+      sender.url && sender.url.startsWith("chrome-extension://"),
+    );
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (!activeTab?.id) {
+        sendResponse({ success: false, error: "no-tab" });
+        return;
+      }
+
+      sendPasteToTab(activeTab.id, textToPaste, {
+        requestPermission: !fromExtensionPage,
+        tabUrl: activeTab.url,
+      })
+        .then((result) => sendResponse(result))
+        .catch(() => sendResponse({ success: false }));
+    });
     return true;
   }
 

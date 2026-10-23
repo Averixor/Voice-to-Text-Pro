@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — Voice to Text Pro</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        color: #1a1a1a;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy Policy — Voice to Text Pro</h1>
+    <p>Last updated: 2026-10-23</p>
+
+    <h2>What this extension does</h2>
+    <p>
+      Voice to Text Pro is a Chrome extension that converts speech to text in
+      the Chrome Side Panel, applies optional punctuation helpers, and can
+      insert the draft into a page field you choose.
+    </p>
+
+    <h2>Speech recognition (Google Web Speech)</h2>
+    <p>
+      Recognition uses the browser Web Speech API
+      (<code>SpeechRecognition</code> / <code>webkitSpeechRecognition</code>).
+      In desktop Google Chrome this typically sends audio to Google’s speech
+      recognition servers over the internet. An active network connection is
+      required for recognition. The extension does not run a separate speech
+      model on your device.
+    </p>
+
+    <h2>Local storage</h2>
+    <p>
+      The extension stores settings and the text draft in
+      <code>chrome.storage.local</code> on your device (recognition language,
+      punctuation level, draft text, and privacy consent flag). This data is
+      not uploaded by the extension to a first-party server.
+    </p>
+
+    <h2>Page access</h2>
+    <p>
+      The extension does not permanently inject scripts into every website. It
+      injects helper scripts only after you take an explicit action (Insert in
+      the side panel or the context-menu paste item), and may ask for optional
+      host access for that site when needed to complete paste.
+    </p>
+
+    <h2>Permissions</h2>
+    <ul>
+      <li><strong>activeTab / scripting</strong> — paste into the page after your gesture</li>
+      <li><strong>storage</strong> — settings and draft</li>
+      <li><strong>sidePanel</strong> — main UI</li>
+      <li><strong>contextMenus</strong> — paste menu item</li>
+      <li><strong>notifications</strong> — optional recording-started notice</li>
+      <li><strong>optional host permissions</strong> — granted per site when paste needs them</li>
+    </ul>
+
+    <h2>Chrome Web Store listing</h2>
+    <p>
+      Chrome Web Store requires a publicly reachable HTTPS Privacy Policy URL.
+      Host this document (or an equivalent page) and paste that URL into the
+      store listing. The packaged <code>privacy.html</code> file alone is not
+      enough for the listing field.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Project repository:
+      <a href="https://github.com/Averixor/Voice-to-Text-Pro"
+        >https://github.com/Averixor/Voice-to-Text-Pro</a
+      >
+    </p>
+  </body>
+</html>

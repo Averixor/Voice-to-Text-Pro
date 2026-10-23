@@ -2,12 +2,10 @@
  * UI i18n: locale key = BCP-47 (same as the recognition language list).
  * Drives side panel UI for the selected `#language` value.
  *
- * Do not replace with English (by design):
- * - `PACKS[locale]` strings for each locale except `ru-RU` / `uk-UA` (native UI).
- * - `ru-RU` and `uk-UA` packs use English UI text; speech + punctuation still follow
- *   that locale (see README).
- * - Punctuation helpers (`punctRuQ`, `punctUkQ`, …) embed non-English tokens to match
- *   transcript wording in high punctuation mode.
+ * Every `PACKS[locale]` ships native UI strings for that locale (including
+ * `ru-RU` and `uk-UA`). Speech recognition language and punctuation helpers
+ * follow the same locale key. Punctuation helpers (`punctRuQ`, `punctUkQ`, …)
+ * embed locale tokens for high punctuation mode.
  */
 (function () {
   const FALLBACK = "en-US";
@@ -272,7 +270,7 @@
       inst2: 'Выберите "Настройки сайта"',
       inst3: "Разрешите доступ к микрофону",
       inst4: "Обновите страницу",
-      footerVersion: "v3.4 • Голос в Текст Pro",
+      footerVersion: "v3.4.1 • Голос в Текст Pro",
       statusReady: "Готов к записи",
       statusRecording: "Идет запись...",
       statusPaused: "На паузе",
@@ -296,6 +294,12 @@
       toastPasteOk: "Текст успешно вставлен",
       toastCopied: "Текст скопирован в буфер обмена",
       toastCleared: "Текст очищен",
+      privacyTitle: 'Уведомление о конфиденциальности',
+      privacyBody:
+        'Распознавание речи использует облачный сервис Google Web Speech через интернет. Черновики хранятся локально в chrome.storage.local. Запись начинается только после согласия.',
+      privacyAccept: 'Принять и продолжить',
+      privacyPolicyLink: 'Политика конфиденциальности',
+      privacyRequired: 'Сначала примите уведомление о конфиденциальности',
       recognitionErrPrefix: "Ошибка:",
       sessionWords: sessionRu,
       punctQuestion: punctRuQ,
@@ -338,7 +342,7 @@
       inst2: "Оберіть «Налаштування сайту»",
       inst3: "Дозвольте доступ до мікрофона",
       inst4: "Оновіть сторінку",
-      footerVersion: "v3.4 • Голос у Текст Pro",
+      footerVersion: "v3.4.1 • Голос у Текст Pro",
       statusReady: "Готовий до запису",
       statusRecording: "Йде запис...",
       statusPaused: "На паузі",
@@ -362,6 +366,12 @@
       toastPasteOk: "Текст успішно вставлено",
       toastCopied: "Текст скопійовано в буфер обміну",
       toastCleared: "Текст очищено",
+      privacyTitle: 'Сповіщення про конфіденційність',
+      privacyBody:
+        'Розпізнавання мовлення використовує хмарний сервіс Google Web Speech через інтернет. Чернетки зберігаються локально в chrome.storage.local. Запис починається лише після згоди.',
+      privacyAccept: 'Прийняти й продовжити',
+      privacyPolicyLink: 'Політика конфіденційності',
+      privacyRequired: 'Спочатку прийміть сповіщення про конфіденційність',
       recognitionErrPrefix: "Помилка:",
       sessionWords: sessionUk,
       punctQuestion: punctUkQ,
@@ -404,7 +414,7 @@
       inst2: "Choose “Site settings”",
       inst3: "Allow microphone access",
       inst4: "Reload the page",
-      footerVersion: "v3.4 • Voice to Text Pro",
+      footerVersion: "v3.4.1 • Voice to Text Pro",
       statusReady: "Ready to record",
       statusRecording: "Recording...",
       statusPaused: "Paused",
@@ -427,6 +437,12 @@
       toastPasteOk: "Text inserted successfully",
       toastCopied: "Text copied to clipboard",
       toastCleared: "Text cleared",
+      privacyTitle: 'Privacy notice',
+      privacyBody:
+        'Speech recognition uses Google\'s Web Speech service over the internet. Drafts are stored locally in chrome.storage.local. Recording starts only after you accept.',
+      privacyAccept: 'Accept and continue',
+      privacyPolicyLink: 'Privacy Policy',
+      privacyRequired: 'Accept the privacy notice before recording',
       recognitionErrPrefix: "Error:",
       sessionWords: sessionEn,
       punctQuestion: punctEnQ,
@@ -469,7 +485,7 @@
       inst2: "Elija «Configuración del sitio»",
       inst3: "Permita el acceso al micrófono",
       inst4: "Recargue la página",
-      footerVersion: "v3.4 • Voz a Texto Pro",
+      footerVersion: "v3.4.1 • Voz a Texto Pro",
       statusReady: "Listo para grabar",
       statusRecording: "Grabando...",
       statusPaused: "En pausa",
@@ -491,6 +507,12 @@
       toastPasteOk: "Texto insertado correctamente",
       toastCopied: "Texto copiado al portapapeles",
       toastCleared: "Texto borrado",
+      privacyTitle: 'Aviso de privacidad',
+      privacyBody:
+        'El reconocimiento de voz usa el servicio Web Speech de Google por internet. Los borradores se guardan localmente en chrome.storage.local. La grabación solo empieza tras aceptar.',
+      privacyAccept: 'Aceptar y continuar',
+      privacyPolicyLink: 'Política de privacidad',
+      privacyRequired: 'Acepte el aviso de privacidad antes de grabar',
       recognitionErrPrefix: "Error:",
       sessionWords(n) {
         return `Sesión: ${n} ${n === 1 ? "palabra" : "palabras"}`;
@@ -535,7 +557,7 @@
       inst2: "Choisissez « Paramètres du site »",
       inst3: "Autorisez l’accès au microphone",
       inst4: "Rechargez la page",
-      footerVersion: "v3.4 • Voix en Texte Pro",
+      footerVersion: "v3.4.1 • Voix en Texte Pro",
       statusReady: "Prêt à enregistrer",
       statusRecording: "Enregistrement...",
       statusPaused: "En pause",
@@ -559,6 +581,12 @@
       toastPasteOk: "Texte inséré avec succès",
       toastCopied: "Texte copié dans le presse-papiers",
       toastCleared: "Texte effacé",
+      privacyTitle: 'Avis de confidentialité',
+      privacyBody:
+        'La reconnaissance vocale utilise le service Web Speech de Google via Internet. Les brouillons sont stockés localement dans chrome.storage.local. L\'enregistrement ne démarre qu\'après acceptation.',
+      privacyAccept: 'Accepter et continuer',
+      privacyPolicyLink: 'Politique de confidentialité',
+      privacyRequired: 'Acceptez l\'avis de confidentialité avant d\'enregistrer',
       recognitionErrPrefix: "Erreur :",
       sessionWords(n) {
         return `Session : ${n} ${n === 1 ? "mot" : "mots"}`;
@@ -603,7 +631,7 @@
       inst2: "„Website-Einstellungen“ wählen",
       inst3: "Mikrofonzugriff erlauben",
       inst4: "Seite neu laden",
-      footerVersion: "v3.4 • Sprache zu Text Pro",
+      footerVersion: "v3.4.1 • Sprache zu Text Pro",
       statusReady: "Bereit zur Aufnahme",
       statusRecording: "Aufnahme läuft...",
       statusPaused: "Pausiert",
@@ -627,6 +655,12 @@
       toastPasteOk: "Text erfolgreich eingefügt",
       toastCopied: "Text in die Zwischenablage kopiert",
       toastCleared: "Text geleert",
+      privacyTitle: 'Datenschutzhinweis',
+      privacyBody:
+        'Die Spracherkennung nutzt Googles Web-Speech-Dienst über das Internet. Entwürfe werden lokal in chrome.storage.local gespeichert. Die Aufnahme startet erst nach Ihrer Zustimmung.',
+      privacyAccept: 'Akzeptieren und fortfahren',
+      privacyPolicyLink: 'Datenschutzerklärung',
+      privacyRequired: 'Bitte akzeptieren Sie den Datenschutzhinweis vor der Aufnahme',
       recognitionErrPrefix: "Fehler:",
       sessionWords(n) {
         return `Sitzung: ${n} ${n === 1 ? "Wort" : "Wörter"}`;
@@ -671,7 +705,7 @@
       inst2: "Scegli «Impostazioni sito»",
       inst3: "Consenti l’accesso al microfono",
       inst4: "Ricarica la pagina",
-      footerVersion: "v3.4 • Voce in Testo Pro",
+      footerVersion: "v3.4.1 • Voce in Testo Pro",
       statusReady: "Pronto a registrare",
       statusRecording: "Registrazione in corso...",
       statusPaused: "In pausa",
@@ -695,6 +729,12 @@
       toastPasteOk: "Testo inserito correttamente",
       toastCopied: "Testo copiato negli appunti",
       toastCleared: "Testo cancellato",
+      privacyTitle: 'Informativa sulla privacy',
+      privacyBody:
+        'Il riconoscimento vocale usa il servizio Web Speech di Google via Internet. Le bozze sono salvate in locale in chrome.storage.local. La registrazione inizia solo dopo l\'accettazione.',
+      privacyAccept: 'Accetta e continua',
+      privacyPolicyLink: 'Informativa sulla privacy',
+      privacyRequired: 'Accetta l\'informativa sulla privacy prima di registrare',
       recognitionErrPrefix: "Errore:",
       sessionWords(n) {
         return `Sessione: ${n} ${n === 1 ? "parola" : "parole"}`;
@@ -739,7 +779,7 @@
       inst2: "「サイトの設定」を開く",
       inst3: "マイクを許可",
       inst4: "ページを再読み込み",
-      footerVersion: "v3.4 • 音声テキスト変換 Pro",
+      footerVersion: "v3.4.1 • 音声テキスト変換 Pro",
       statusReady: "録音の準備ができました",
       statusRecording: "録音中...",
       statusPaused: "一時停止中",
@@ -763,6 +803,12 @@
       toastPasteOk: "テキストを挿入しました",
       toastCopied: "クリップボードにコピーしました",
       toastCleared: "テキストを消去しました",
+      privacyTitle: 'プライバシー通知',
+      privacyBody:
+        '音声認識はインターネット経由で Google の Web Speech サービスを使用します。下書きは chrome.storage.local にローカル保存されます。録音は同意後にのみ開始されます。',
+      privacyAccept: '同意して続ける',
+      privacyPolicyLink: 'プライバシーポリシー',
+      privacyRequired: '録音の前にプライバシー通知に同意してください',
       recognitionErrPrefix: "エラー:",
       sessionWords(n) {
         return `セッション: ${n} 語`;
@@ -807,7 +853,7 @@
       inst2: "「사이트 설정」 선택",
       inst3: "마이크 허용",
       inst4: "페이지 새로고침",
-      footerVersion: "v3.4 • 음성을 텍스트로 Pro",
+      footerVersion: "v3.4.1 • 음성을 텍스트로 Pro",
       statusReady: "녹음 준비됨",
       statusRecording: "녹음 중...",
       statusPaused: "일시정지됨",
@@ -831,6 +877,12 @@
       toastPasteOk: "텍스트가 삽입되었습니다",
       toastCopied: "클립보드에 복사됨",
       toastCleared: "텍스트 지워짐",
+      privacyTitle: '개인정보 안내',
+      privacyBody:
+        '음성 인식은 인터넷을 통해 Google Web Speech 서비스를 사용합니다. 초안은 chrome.storage.local에 로컬로 저장됩니다. 동의 후에만 녹음이 시작됩니다.',
+      privacyAccept: '동의하고 계속',
+      privacyPolicyLink: '개인정보 처리방침',
+      privacyRequired: '녹음 전에 개인정보 안내에 동의해 주세요',
       recognitionErrPrefix: "오류:",
       sessionWords(n) {
         return `세션: ${n}단어`;
@@ -875,7 +927,7 @@
       inst2: "选择「网站设置」",
       inst3: "允许使用麦克风",
       inst4: "刷新页面",
-      footerVersion: "v3.4 • 语音转文本 Pro",
+      footerVersion: "v3.4.1 • 语音转文本 Pro",
       statusReady: "准备录音",
       statusRecording: "正在录音...",
       statusPaused: "已暂停",
@@ -897,6 +949,12 @@
       toastPasteOk: "文本插入成功",
       toastCopied: "文本已复制到剪贴板",
       toastCleared: "文本已清除",
+      privacyTitle: '隐私声明',
+      privacyBody:
+        '语音识别通过互联网使用 Google Web Speech 服务。草稿保存在本地 chrome.storage.local。仅在您同意后才会开始录音。',
+      privacyAccept: '同意并继续',
+      privacyPolicyLink: '隐私政策',
+      privacyRequired: '开始录音前请先同意隐私声明',
       recognitionErrPrefix: "错误：",
       sessionWords(n) {
         return `会话：${n} 个词`;

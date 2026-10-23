@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.4.1 — 2026-10-23
+
+### Security / privacy
+
+- Removed permanent `content_scripts` and broad `host_permissions`. Paste injects `i18n.js` + `content.js` via `chrome.scripting` only after Insert or context-menu paste; `optional_host_permissions` may be requested per origin.
+- In-panel privacy consent gate (`privacyConsentAccepted`) before recording; packaged `privacy.html` policy page.
+- Paste targets no longer include `password` or non-text input types (`number`, `date`, …).
+
+### Fixed
+
+- Side panel open state tracked with a `runtime.connect({ name: "sidePanel" })` port instead of `sidePanelOpen` in storage.
+- In-panel shortcuts accept `Ctrl` or `Command` (`metaKey`).
+- Commands no longer fall back to tab-level speech recognition; STT is panel-only.
+- `navigator.clipboard.writeText` for copy (with `execCommand` fallback).
+- `prefers-reduced-motion: reduce` disables orb/particle/wave animations.
+
+### Docs
+
+- README / CHECKLIST / `i18n.js` header synced with native `ru-RU` / `uk-UA` UI packs, macOS shortcut split, and MIT `LICENSE` file.
+- Removed “shared punctuation” claim; punctuation regex packs remain in `i18n.js` (panel formatting).
+
 ## 3.4 — 2026-05-12
 
 ### Added

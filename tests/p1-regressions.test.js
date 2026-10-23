@@ -44,6 +44,9 @@ test("side panel keeps manual edits when an interim result becomes final", () =>
   const context = loadScript("sidepanel.js", {
     chrome: {
       runtime: {
+        connect() {
+          return { name: "sidePanel" };
+        },
         onMessage: { addListener() {} },
       },
     },
@@ -83,6 +86,9 @@ test("side panel separates new speech from a manually edited draft", () => {
   const context = loadScript("sidepanel.js", {
     chrome: {
       runtime: {
+        connect() {
+          return { name: "sidePanel" };
+        },
         onMessage: { addListener() {} },
       },
     },
@@ -114,6 +120,9 @@ test("fallback updates synchronize side panel state and draft", () => {
   const context = loadScript("sidepanel.js", {
     chrome: {
       runtime: {
+        connect() {
+          return { name: "sidePanel" };
+        },
         onMessage: {
           addListener(listener) {
             messageListener = listener;
@@ -159,27 +168,14 @@ test("fallback updates synchronize side panel state and draft", () => {
   assert.equal(saveCount, 1);
 });
 
-test("fallback recognition persists final and interim transcript text", () => {
-  const storageWrites = [];
-  const runtimeMessages = [];
+test("content paste helper rejects password fields", () => {
   const context = loadScript("content.js", {
     Node: { ELEMENT_NODE: 1 },
     chrome: {
       runtime: {
         onMessage: { addListener() {} },
-        sendMessage(message) {
-          runtimeMessages.push(message);
+        sendMessage() {
           return Promise.resolve();
-        },
-      },
-      storage: {
-        local: {
-          get(keys, callback) {
-            callback({});
-          },
-          set(value) {
-            storageWrites.push(value);
-          },
         },
       },
     },
@@ -188,28 +184,35 @@ test("fallback recognition persists final and interim transcript text", () => {
     },
     window: {},
   });
-  const ContentSpeechRecognizer = vm.runInContext(
-    "ContentSpeechRecognizer",
+  const VoiceToTextPasteHelper = vm.runInContext(
+    "VoiceToTextPasteHelper",
     context,
   );
-  const recognizer = Object.create(ContentSpeechRecognizer.prototype);
+  const helper = Object.create(VoiceToTextPasteHelper.prototype);
 
-  recognizer.finalTranscript = "Saved draft";
-  recognizer.interimTranscript = "";
-  recognizer.applyPunctuation = (text) => text.trim();
-
-  recognizer.handleRecognitionResult(recognitionEvent("new words", false));
-
-  assert.equal(recognizer.finalTranscript, "Saved draft ");
-  assert.equal(recognizer.interimTranscript, "new words");
-  assert.equal(storageWrites.at(-1).textDraft, "Saved draft new words");
-  assert.equal(runtimeMessages.at(-1).action, "updateTranscript");
-  assert.equal(runtimeMessages.at(-1).final, "Saved draft ");
-  assert.equal(runtimeMessages.at(-1).interim, "new words");
+  assert.equal(
+    helper.isEditableElement({
+      nodeType: 1,
+      tagName: "INPUT",
+      type: "password",
+      disabled: false,
+      readOnly: false,
+    }),
+    false,
+  );
+  assert.equal(
+    helper.isEditableElement({
+      nodeType: 1,
+      tagName: "INPUT",
+      type: "text",
+      disabled: false,
+      readOnly: false,
+    }),
+    true,
+  );
 });
 
-test("fallback start payload uses stored draft and settings", async () => {
-  const sentMessages = [];
+test("background has no tab STT fallback helper", () => {
   const context = loadScript("background.js", {
     chrome: {
       commands: { onCommand: { addListener() {} } },
@@ -220,39 +223,53 @@ test("fallback start payload uses stored draft and settings", async () => {
         update() {},
       },
       notifications: { create() {} },
+      permissions: { request() {} },
       runtime: {
+        onConnect: { addListener() {} },
         onInstalled: { addListener() {} },
         onMessage: { addListener() {} },
+        sendMessage() {
+          return Promise.reject(new Error("no panel"));
+        },
       },
-      sidePanel: {},
+      scripting: {
+        executeScript() {
+          return Promise.resolve();
+        },
+      },
+      sidePanel: {
+        open() {
+          return Promise.resolve();
+        },
+        setOptions() {
+          return Promise.resolve();
+        },
+        setPanelBehavior() {
+          return Promise.resolve();
+        },
+      },
       storage: {
         local: {
           get() {
-            return Promise.resolve({
-              autoPunctuation: "high",
-              language: "uk-UA",
-              textDraft: "Stored text",
-            });
+            return Promise.resolve({});
           },
+          remove() {},
+          set() {},
         },
         onChanged: { addListener() {} },
       },
       tabs: {
-        sendMessage(tabId, message) {
-          sentMessages.push({ message, tabId });
-          return Promise.resolve();
+        query() {},
+        sendMessage() {
+          return Promise.resolve({ success: true });
         },
       },
     },
   });
-  const startRecordingInTab = vm.runInContext("startRecordingInTab", context);
 
-  await startRecordingInTab(17);
-
-  assert.equal(sentMessages.length, 1);
-  assert.equal(sentMessages[0].tabId, 17);
-  assert.equal(sentMessages[0].message.action, "startRecording");
-  assert.equal(sentMessages[0].message.language, "uk-UA");
-  assert.equal(sentMessages[0].message.autoPunctuation, "high");
-  assert.equal(sentMessages[0].message.initialText, "Stored text");
+  assert.equal(
+    vm.runInContext("typeof startRecordingInTab", context),
+    "undefined",
+  );
+  assert.equal(vm.runInContext("typeof sendPasteToTab", context), "function");
 });

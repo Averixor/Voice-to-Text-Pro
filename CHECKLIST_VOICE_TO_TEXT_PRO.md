@@ -2,7 +2,7 @@
 
 ## Project description
 
-**Voice to Text Pro** is a Google Chrome extension (Manifest V3): speech to text via Web Speech API, **four AI punctuation levels**, spell check in the input field, UI in the **side panel**. The selected **recognition language** drives STT, spell check, and the string pack in **`i18n.js`** (`ru-RU` / `uk-UA` use English UI strings with locale-specific punctuation helpers). Recording-started notification and context menu item are localized in **`background.js`** from `storage.language`.
+**Voice to Text Pro** is a Google Chrome extension (Manifest V3): speech to text via Web Speech API, **four AI punctuation levels**, spell check in the input field, UI in the **side panel**. The selected **recognition language** drives STT, spell check, and the native string pack in **`i18n.js`** (including `ru-RU` / `uk-UA`). Recording-started notification and context menu item are localized in **`background.js`** from `storage.language`. Paste injects `content.js` on demand after a user gesture; there is no permanent `content_scripts` block.
 
 ---
 
@@ -10,13 +10,15 @@
 
 ```text
 Voice-to-Text-Pro-v3.4/
-├── manifest.json                 # MV3: permissions, side_panel, content_scripts, commands
-├── background.js                 # Service worker: menu, notifications, commands, sendPasteToTab
+├── manifest.json                 # MV3: permissions, optional_host_permissions, side_panel, commands
+├── background.js                 # Service worker: menu, notifications, commands, on-demand paste
 ├── i18n.js                       # UI strings + punctuation regex; globalThis.AppI18n
 ├── sidepanel.html                # Panel markup (i18n.js + sidepanel.js)
-├── sidepanel.js                  # Panel recognition, applyAppLocale(), storage
-├── content.js                    # Paste, optional tab recognition; uses i18n.js
-├── styles.css                    # Side panel styles
+├── sidepanel.js                  # Panel recognition, privacy consent, applyAppLocale(), storage
+├── content.js                    # Paste-only helper (injected after user gesture)
+├── privacy.html                  # Privacy Policy (package copy)
+├── styles.css                    # Side panel styles + prefers-reduced-motion
+├── LICENSE                       # MIT
 ├── icons/
 │   ├── icon16.png
 │   ├── icon48.png
@@ -52,24 +54,24 @@ Voice-to-Text-Pro-v3.4/
 - [x] ARIA, `role="status"`, visually-hidden label, `status-idle` on load
 - [x] `closeSidePanel()` — stop recording, save draft
 - [x] `recognitionError` clears flags correctly
-- [x] **`i18n.js`** + **`applyAppLocale()`** — selected list locale loads its string pack (`ru-RU` / `uk-UA`: English UI + locale punctuation)
+- [x] **`i18n.js`** + **`applyAppLocale()`** — selected list locale loads its native string pack (including `ru-RU` / `uk-UA`)
 - [x] **`globalThis.AppI18n`** — safe export (including worker via `importScripts`)
 - [x] **`background.js`**: `updateSettings` partially saves `language` and/or `autoPunctuation`
 - [x] **Notification** and **context menu** follow `storage.language`; menu update + fallback on `update` error
 - [x] **`sendPasteToTab`** + **`chrome.scripting.executeScript`** (`i18n.js`, `content.js`) when content script missing
-- [x] **`content.js`**: high punctuation via `AppI18n.getPack` (parity with panel)
+- [x] **`content.js`**: paste-only helper (no tab STT); password / non-text inputs excluded
 - [x] Documentation: README, CHANGELOG, CHECKLIST
 
 ---
 
 ## File roles in v3.4
 
-- **`manifest.json`** — v3.4; `content_scripts`: `i18n.js`, `content.js`; `scripting` permission.
+- **`manifest.json`** — v3.4; `optional_host_permissions`; no permanent `content_scripts`; `scripting` + on-demand inject.
 - **`i18n.js`** — UI localization and punctuation regex; `globalThis.AppI18n`.
 - **`background.js`** — menu/notification by language; `updateSettings` (partial fields); `sendPasteToTab` + optional script inject.
 - **`sidepanel.js`** — pause, `applyAppLocale()`, transient status, capitalization, panel close, a11y.
 - **`sidepanel.html`** — loads `i18n.js`; markup for pause and accessibility.
-- **`content.js`** — punctuation via `AppI18n`; paste; editable-field tracking.
+- **`content.js`** — paste-only; editable-field tracking; injected on demand.
 - **`styles.css`** — panel styles, accessibility, media queries.
 - **Docs** — `README.md`, `CHANGELOG.md`, `CHECKLIST_VOICE_TO_TEXT_PRO.md` (aligned with code).
 
