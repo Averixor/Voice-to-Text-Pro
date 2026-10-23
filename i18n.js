@@ -267,7 +267,7 @@
       punctHigh: "Высокий (вопросы, восклицания)",
       instructionsHeading: "Требуется доступ к микрофону",
       inst1: "Не используйте замок 🔒 сайта (GitHub и т.п.) — это не для расширения",
-      inst2: "Нажмите «Разрешить микрофон» — вкладка слева откроется сама",
+      inst2: "Нажмите «Разрешить микрофон» — рядом откроется вкладка расширения",
       inst3: "Один раз нажмите Allow — Chrome запомнит «Разрешить», как в настройках сайта",
       inst4: "Или откройте настройки Chrome ниже и поставьте Микрофон → Разрешить",
       btnMicSettings: "Разрешить микрофон",
@@ -283,14 +283,20 @@
         "Доступ запрещён. Нажмите «Разрешить» в запросе Chrome. Если ранее нажали «Блокировать», снимите блок в настройках микрофона для этого расширения.",
       micPageCloseHint: "После разрешения окно закроется автоматически.",
       recorderDocTitle: "Запись — Голос в Текст Pro",
-      recorderHeading: "Микрофон расширения",
+      recorderBrandTag: "Диктовка в боковой панели Chrome",
+      recorderHeading: "Разрешите микрофон",
       recorderBody:
-        "Распознавание речи идёт во вкладке расширения (не в боковой панели и не на сайте). Один раз разрешите микрофон — Chrome запомнит «Разрешить».",
-      recorderNote:
-        "Фоновая вкладка слева для распознавания. Разрешение микрофона запрашивается в боковой панели на вашей странице.",
-      recorderListening: "Идёт запись… Вкладка работает в фоне.",
+        "Один раз нажмите кнопку ниже — Chrome запомнит «Разрешить» для расширения. Потом вы вернётесь на свою вкладку.",
+      recorderTutorialHeading: "Как пользоваться",
+      recorderStep1: "Разрешите микрофон на этой вкладке (кнопка выше).",
+      recorderStep2: "Вы вернётесь на страницу — эта вкладка продолжит слушать в фоне.",
+      recorderStep3: "В боковой панели: «Начать», «Пауза», «Стоп».",
+      recorderStep4: "«Вставить» — текст попадёт в активное поле на странице.",
+      recorderKeysHtml:
+        'Горячие клавиши: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> старт · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> стоп',
+      recorderListening: "Идёт запись… Можно вернуться на свою вкладку.",
       recorderIdle: "Готово. Нажмите «Начать» в боковой панели.",
-      recorderGrantedClosing: "Микрофон разрешён. Вкладка закроется сама…",
+      recorderGrantedClosing: "Микрофон разрешён. Возвращаемся на вашу вкладку…",
       recorderClosing: "Готово. Закрываем вкладку…",
       footerVersion: "v3.4.1 • Голос в Текст Pro",
       statusReady: "Готов к записи",
@@ -379,15 +385,21 @@
       micPageCloseHint:
         "Після дозволу закрийте вікно і продовжте в бічній панелі.",
       recorderDocTitle: "Запис — Голос у Текст Pro",
-      recorderHeading: "Мікрофон розширення",
+      recorderBrandTag: "Диктування в бічній панелі Chrome",
+      recorderHeading: "Дозвольте мікрофон",
       recorderBody:
-        "Розпізнавання мови йде в цьому вікні розширення (не в бічній панелі і не на сайті). Один раз дозвольте мікрофон — Chrome запам’ятає «Дозволити».",
-      recorderNote:
-        "Це звичайна вкладка. Після дозволу мікрофона ви повернетесь на свою сторінку — вкладка лишиться в смужці. По «Стоп» вона закриється сама.",
-      recorderListening: "Йде запис… Вкладка працює у фоні.",
+        "Один раз натисніть кнопку нижче — Chrome запам’ятає «Дозволити» для розширення. Потім ви повернетесь на свою вкладку.",
+      recorderTutorialHeading: "Як користуватися",
+      recorderStep1: "Дозвольте мікрофон на цій вкладці (кнопка вище).",
+      recorderStep2: "Ви повернетесь на сторінку — ця вкладка слухатиме у фоні.",
+      recorderStep3: "У бічній панелі: «Почати», «Пауза», «Стоп».",
+      recorderStep4: "«Вставити» — текст потрапить у активне поле на сторінці.",
+      recorderKeysHtml:
+        'Гарячі клавіші: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> старт · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> стоп',
+      recorderListening: "Йде запис… Можна повернутися на свою вкладку.",
       recorderIdle: "Готово. Натисніть «Почати» в бічній панелі.",
-      recorderGrantedClosing: "Мікрофон дозволено. Вікно закриється само…",
-      recorderClosing: "Готово. Закриваємо…",
+      recorderGrantedClosing: "Мікрофон дозволено. Повертаємось на вашу вкладку…",
+      recorderClosing: "Готово. Закриваємо вкладку…",
       footerVersion: "v3.4.1 • Голос у Текст Pro",
       statusReady: "Готовий до запису",
       statusRecording: "Йде запис...",
@@ -457,7 +469,7 @@
       punctHigh: "High (questions, exclamations)",
       instructionsHeading: "Microphone access required",
       inst1: "Do not use the site 🔒 lock (GitHub, etc.) — not for the extension",
-      inst2: "Press Allow microphone — a left tab opens by itself",
+      inst2: "Press Allow microphone — a tab opens next to this page",
       inst3: "Press Allow once — Chrome remembers Allow (same as site details)",
       inst4: "Or open Chrome settings below and set Microphone → Allow",
       btnMicSettings: "Allow microphone",
@@ -475,14 +487,20 @@
       micPageCloseHint:
         "After allowing, close this window and continue in the side panel.",
       recorderDocTitle: "Recorder — Voice to Text Pro",
-      recorderHeading: "Extension microphone",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderHeading: "Allow microphone",
       recorderBody:
-        "Speech recognition runs in this extension tab (not in the side panel and not on the website). Allow the mic once — Chrome remembers Allow.",
-      recorderNote:
-        "Opens as the first (leftmost) tab in the background — you stay on your page. Closes on Stop. Only the first mic permission may briefly show this tab.",
-      recorderListening: "Recording… This tab stays in the background.",
+        "Press the button once — Chrome remembers Allow for this extension. Then you return to your page.",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
+      recorderListening: "Recording… You can switch back to your page.",
       recorderIdle: "Ready. Press Start in the side panel.",
-      recorderGrantedClosing: "Microphone allowed. This tab will close…",
+      recorderGrantedClosing: "Microphone allowed. Returning to your tab…",
       recorderClosing: "Done. Closing tab…",
       footerVersion: "v3.4.1 • Voice to Text Pro",
       statusReady: "Ready to record",
@@ -573,6 +591,14 @@
         "Tras permitir, cierre la ventana y continúe en el panel lateral.",
       recorderDocTitle: "Grabadora — Voz a Texto Pro",
       recorderHeading: "Micrófono de la extensión",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "El reconocimiento se ejecuta en esta ventana de la extensión (no en el panel ni en el sitio). Permita el micro una vez.",
       recorderNote:
@@ -673,6 +699,14 @@
         "Après autorisation, fermez la fenêtre et continuez dans le panneau latéral.",
       recorderDocTitle: "Enregistreur — Voix en Texte Pro",
       recorderHeading: "Micro de l’extension",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "La reconnaissance tourne dans cette fenêtre d’extension (pas dans le panneau ni sur le site). Autorisez le micro une fois.",
       recorderNote:
@@ -773,6 +807,14 @@
         "Nach der Freigabe Fenster schließen und im Seitenpanel fortfahren.",
       recorderDocTitle: "Aufnahme — Sprache zu Text Pro",
       recorderHeading: "Mikrofon der Erweiterung",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "Die Erkennung läuft in diesem Erweiterungsfenster (nicht im Panel und nicht auf der Website). Einmal erlauben.",
       recorderNote:
@@ -873,6 +915,14 @@
         "Dopo aver consentito, chiudi la finestra e continua nel pannello laterale.",
       recorderDocTitle: "Registratore — Voce in Testo Pro",
       recorderHeading: "Microfono dell’estensione",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "Il riconoscimento avviene in questa finestra dell’estensione (non nel pannello né sul sito). Consenti il microfono una volta.",
       recorderNote:
@@ -974,6 +1024,14 @@
         "許可後、ウィンドウを閉じてサイドパネルに戻ってください。",
       recorderDocTitle: "録音 — 音声テキスト変換 Pro",
       recorderHeading: "拡張機能のマイク",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "音声認識はこの拡張機能ウィンドウで行います（サイドパネルやサイトではありません）。一度マイクを許可してください。",
       recorderNote:
@@ -1072,6 +1130,14 @@
       micPageCloseHint: "허용 후 창을 닫고 사이드 패널로 돌아가세요.",
       recorderDocTitle: "녹음 — 음성을 텍스트로 Pro",
       recorderHeading: "확장 프로그램 마이크",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "음성 인식은 이 확장 프로그램 창에서 실행됩니다(사이드 패널/사이트 아님). 마이크를 한 번 허용하세요.",
       recorderNote:
@@ -1168,6 +1234,14 @@
       micPageCloseHint: "允许后关闭窗口，继续在侧边栏操作。",
       recorderDocTitle: "录音 — 语音转文本 Pro",
       recorderHeading: "扩展麦克风",
+      recorderBrandTag: "Dictation in the Chrome side panel",
+      recorderTutorialHeading: "How to use",
+      recorderStep1: "Allow the microphone on this tab (button above).",
+      recorderStep2: "You return to your page — this tab keeps listening in the background.",
+      recorderStep3: "In the side panel use Start, Pause, and Stop.",
+      recorderStep4: "Press Insert to paste text into the active field on the page.",
+      recorderKeysHtml:
+        'Shortcuts: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> start · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>2</kbd> stop',
       recorderBody:
         "语音识别在此扩展窗口中运行（不在侧边栏或网站上）。请允许一次麦克风。",
       recorderNote: "录音时请保持此窗口打开。在侧边栏使用开始 / 停止。",

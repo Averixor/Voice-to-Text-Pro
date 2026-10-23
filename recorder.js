@@ -4,12 +4,19 @@
 // ===========================================
 
 (function () {
+  const brandTitle = document.getElementById("recBrandTitle");
+  const brandTag = document.getElementById("recBrandTag");
   const heading = document.getElementById("recHeading");
   const body = document.getElementById("recBody");
   const allowBtn = document.getElementById("recAllowBtn");
   const allowLabel = document.getElementById("recAllowLabel");
   const statusEl = document.getElementById("recStatus");
-  const noteEl = document.getElementById("recNote");
+  const tutorialHeading = document.getElementById("recTutorialHeading");
+  const step1 = document.getElementById("recStep1");
+  const step2 = document.getElementById("recStep2");
+  const step3 = document.getElementById("recStep3");
+  const step4 = document.getElementById("recStep4");
+  const keysEl = document.getElementById("recKeys");
 
   /** @type {chrome.runtime.Port|null} */
   let port = null;
@@ -32,16 +39,31 @@
     return AppI18n.getPack(AppI18n.normalizeLocale(lang || "en-US"));
   }
 
+  function setHtml(el, html) {
+    if (el && html !== undefined) el.innerHTML = html;
+  }
+
+  function setText(el, text) {
+    if (el && text !== undefined) el.textContent = text;
+  }
+
   function applyPack(p) {
     pack = p;
     if (!p) return;
     document.documentElement.lang = p.htmlLang || "en";
     document.title = p.recorderDocTitle || "Recorder — Voice to Text Pro";
-    heading.textContent = p.recorderHeading || heading.textContent;
-    body.textContent = p.recorderBody || body.textContent;
-    noteEl.textContent = p.recorderNote || noteEl.textContent;
+    setText(brandTitle, p.headerTitle || p.recorderBrandTitle);
+    setText(brandTag, p.recorderBrandTag || p.tagline);
+    setText(heading, p.recorderHeading);
+    setText(body, p.recorderBody);
+    setText(tutorialHeading, p.recorderTutorialHeading);
+    setText(step1, p.recorderStep1);
+    setText(step2, p.recorderStep2);
+    setText(step3, p.recorderStep3);
+    setText(step4, p.recorderStep4);
+    setHtml(keysEl, p.recorderKeysHtml);
     if (!isRecording) {
-      allowLabel.textContent = p.micPageAllowBtn || allowLabel.textContent;
+      setText(allowLabel, p.micPageAllowBtn);
     }
   }
 
@@ -241,7 +263,7 @@
         pack?.micPageDenied ||
           "Click «Allow microphone» on this tab, then confirm in Chrome.",
       );
-      // Bring this leftmost tab forward so the Chrome Allow dialog can appear.
+      // Ask background to show this tab beside the user's page for Allow.
       post({ type: "needMicFocus" });
       return;
     }

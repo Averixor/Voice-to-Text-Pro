@@ -180,7 +180,7 @@ class SpeechToTextPro {
     }
 
     if (msg.type === "needMicFocus") {
-      // Background brings the leftmost recorder tab forward for Allow.
+      // Background shows the recorder tab beside this page for Allow.
       this.awaitingMicGrant = true;
       this.pendingStartAfterMic = true;
       this.updateUIStatus("preparing", this.pack.statusMicWait);
@@ -434,7 +434,7 @@ class SpeechToTextPro {
   }
 
   openMicrophonePermissionPage() {
-    // Always auto-create the leftmost extension tab for the mic prompt.
+    // Open recorder beside this page for the Chrome mic prompt.
     this.pendingStartAfterMic = false;
     this.awaitingMicGrant = true;
     this.updateUIStatus("preparing", this.pack.statusMicWait);
@@ -484,7 +484,7 @@ class SpeechToTextPro {
     this.instructions.style.display = "none";
     this.saveSettings();
 
-    // Always auto-create the leftmost recorder tab — no manual open.
+    // Open/reuse recorder beside this page; it hides after mic/start.
     this.postToBackground({
       type: "startRecording",
       language: this.currentLanguage,

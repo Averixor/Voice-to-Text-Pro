@@ -197,7 +197,7 @@ Chrome side panels cannot reliably use the microphone. This extension runs speec
 
 1. Press **Start** (or **Allow microphone**) in the side panel — Chrome’s mic prompt appears on **this tab** (where the panel is open).
 2. Press **Allow** once. Permission is for the extension, not the website.
-3. A recorder tab opens **first (leftmost)** in the **background** and keeps listening.
+3. A recorder tab opens **next to your page**; after Allow you return here and it keeps listening in the background.
 4. Press **Stop** — the recorder tab closes automatically.
 
 ### Recognition does not start
