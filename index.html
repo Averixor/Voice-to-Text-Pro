@@ -46,9 +46,13 @@
     <h2>Local storage</h2>
     <p>
       The extension stores settings and the text draft in
-      <code>chrome.storage.local</code> on your device (recognition language,
-      punctuation level, draft text, and privacy consent flag). This data is
-      not uploaded by the extension to a first-party server.
+      <code>chrome.storage.local</code> on your device:
+      recognition language (<code>language</code>), punctuation level
+      (<code>autoPunctuation</code>), draft text (<code>textDraft</code>), and
+      the privacy consent flag (<code>privacyConsentAccepted</code>, set to
+      <code>true</code> when the user accepts the in-panel notice before
+      recording). This data is not uploaded by the extension to a first-party
+      server.
     </p>
 
     <h2>Page access</h2>
