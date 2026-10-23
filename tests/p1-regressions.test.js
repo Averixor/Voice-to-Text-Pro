@@ -222,9 +222,26 @@ test("background has no tab STT fallback helper", () => {
         removeAll() {},
         update() {},
       },
-      notifications: { create() {} },
+      notifications: {
+        clear() {
+          return Promise.resolve(true);
+        },
+        create() {
+          return Promise.resolve("voice-to-text-pro-recording");
+        },
+        onButtonClicked: { addListener() {} },
+        onClicked: { addListener() {} },
+      },
+      tabs: {
+        query() {
+          return Promise.resolve([]);
+        },
+      },
       permissions: { request() {} },
       runtime: {
+        getURL(path) {
+          return `chrome-extension://test/${path}`;
+        },
         onConnect: { addListener() {} },
         onInstalled: { addListener() {} },
         onMessage: { addListener() {} },
@@ -263,6 +280,18 @@ test("background has no tab STT fallback helper", () => {
         sendMessage() {
           return Promise.resolve({ success: true });
         },
+      },
+      windows: {
+        create() {
+          return Promise.resolve({ id: 1 });
+        },
+        get() {
+          return Promise.resolve({ id: 1 });
+        },
+        update() {
+          return Promise.resolve();
+        },
+        onRemoved: { addListener() {} },
       },
     },
   });

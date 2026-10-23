@@ -8,6 +8,26 @@ Also available at site root: `https://averixor.github.io/Voice-to-Text-Pro/`
 
 Local package copy (in-extension link only): `privacy.html`.
 
+## Upload package
+
+`dist/Voice-to-Text-Pro-v3.4.1.zip` — runtime only (`manifest.json` version **3.4.1**). No `tests/`, docs, or `.github/`.
+
+## Listing screenshots
+
+In `store/screenshots/` (not inside the ZIP):
+
+1. `01-privacy-consent-1280x800.png` — consent gate (recording blocked until Accept).
+2. `02-panel-ready-1280x800.png` — panel after consent, footer `v3.4.1`.
+3. `03-consent-panel-380x800.png` — panel-only consent crop.
+
+Upload at least (1) or (2) to the store listing.
+
+## If asked about Google / audio
+
+Use this (same as the live policy):
+
+> Recognition uses the browser Web Speech API. In desktop Google Chrome this typically sends audio to Google’s speech recognition servers over the internet. An active network connection is required for recognition. The extension does not run a separate speech model on your device.
+
 ## Single purpose statement
 
 Convert speech to text in the Chrome Side Panel and insert the resulting draft into a page field chosen by the user.

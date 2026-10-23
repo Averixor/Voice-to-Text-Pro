@@ -266,10 +266,33 @@
       punctMedium: "Средний (запятые, точки)",
       punctHigh: "Высокий (вопросы, восклицания)",
       instructionsHeading: "Требуется доступ к микрофону",
-      inst1: "Нажмите на значок 🔒 в адресной строке",
-      inst2: 'Выберите "Настройки сайта"',
-      inst3: "Разрешите доступ к микрофону",
-      inst4: "Обновите страницу",
+      inst1: "Нажмите кнопку ниже прямо в этой панели (на вашей вкладке)",
+      inst2:
+        "В запросе Chrome нажмите «Разрешить» — он появится у этой вкладки",
+      inst3: "Запись потом идёт во фоновой вкладке расширения слева",
+      inst4:
+        "Сайты во вкладках не затрагиваются — разрешение только для расширения",
+      btnMicSettings: "Разрешить микрофон",
+      micPageDocTitle: "Микрофон — Голос в Текст Pro",
+      micPageHeading: "Разрешить микрофон расширению",
+      micPageBody:
+        "Один раз дайте доступ микрофону именно этому расширению. Chrome запомнит выбор как «Разрешить». Сайты во вкладках это не затрагивает — они спрашивают доступ отдельно.",
+      micPageAllowBtn: "Разрешить микрофон",
+      micPageAllowedBtn: "Разрешено",
+      micPageSuccess: "Микрофон разрешён. Окно закроется само…",
+      micPageDenied:
+        "Доступ запрещён. Нажмите «Разрешить» в запросе Chrome. Если ранее нажали «Блокировать», снимите блок в настройках микрофона для этого расширения.",
+      micPageCloseHint: "После разрешения окно закроется автоматически.",
+      recorderDocTitle: "Запись — Голос в Текст Pro",
+      recorderHeading: "Микрофон расширения",
+      recorderBody:
+        "Распознавание речи идёт во вкладке расширения (не в боковой панели и не на сайте). Один раз разрешите микрофон — Chrome запомнит «Разрешить».",
+      recorderNote:
+        "Фоновая вкладка слева для распознавания. Разрешение микрофона запрашивается в боковой панели на вашей странице.",
+      recorderListening: "Идёт запись… Вкладка работает в фоне.",
+      recorderIdle: "Готово. Нажмите «Начать» в боковой панели.",
+      recorderGrantedClosing: "Микрофон разрешён. Вкладка закроется сама…",
+      recorderClosing: "Готово. Закрываем вкладку…",
       footerVersion: "v3.4.1 • Голос в Текст Pro",
       statusReady: "Готов к записи",
       statusRecording: "Идет запись...",
@@ -282,7 +305,7 @@
         "Ошибка: Ваш браузер не поддерживает Speech Recognition API.",
       errMic: "Нет доступа к микрофону",
       errMicDetail:
-        "Нет доступа к микрофону. Разрешите доступ и обновите страницу.",
+        "Нет доступа к микрофону. Нажмите «Разрешить микрофон» в этой панели и подтвердите запрос Chrome на этой вкладке.",
       errNetwork: "Ошибка сети",
       errNetworkDetail: "Ошибка сети. Проверьте подключение.",
       errRecognition: "Ошибка распознавания",
@@ -294,12 +317,12 @@
       toastPasteOk: "Текст успешно вставлен",
       toastCopied: "Текст скопирован в буфер обмена",
       toastCleared: "Текст очищен",
-      privacyTitle: 'Уведомление о конфиденциальности',
+      privacyTitle: "Уведомление о конфиденциальности",
       privacyBody:
-        'Распознавание речи использует облачный сервис Google Web Speech через интернет. Черновики хранятся локально в chrome.storage.local. Запись начинается только после согласия.',
-      privacyAccept: 'Принять и продолжить',
-      privacyPolicyLink: 'Политика конфиденциальности',
-      privacyRequired: 'Сначала примите уведомление о конфиденциальности',
+        "Распознавание речи использует облачный сервис Google Web Speech через интернет. Черновики хранятся локально в chrome.storage.local. Запись начинается только после согласия.",
+      privacyAccept: "Принять и продолжить",
+      privacyPolicyLink: "Политика конфиденциальности",
+      privacyRequired: "Сначала примите уведомление о конфиденциальности",
       recognitionErrPrefix: "Ошибка:",
       sessionWords: sessionRu,
       punctQuestion: punctRuQ,
@@ -338,10 +361,34 @@
       punctMedium: "Середній (коми, крапки)",
       punctHigh: "Високий (питання, оклики)",
       instructionsHeading: "Потрібен доступ до мікрофона",
-      inst1: "Натисніть на значок 🔒 у рядку адреси",
-      inst2: "Оберіть «Налаштування сайту»",
-      inst3: "Дозвольте доступ до мікрофона",
-      inst4: "Оновіть сторінку",
+      inst1: "Натисніть кнопку нижче прямо в цій панелі (на вашій вкладці)",
+      inst2:
+        "У запиті Chrome натисніть «Дозволити» — він з’явиться біля цієї вкладки",
+      inst3: "Запис потім іде у фоновій вкладці розширення зліва",
+      inst4: "Сайти у вкладках не змінюються — дозвіл лише для розширення",
+      btnMicSettings: "Дозволити мікрофон",
+      micPageDocTitle: "Мікрофон — Голос у Текст Pro",
+      micPageHeading: "Дозволити мікрофон розширенню",
+      micPageBody:
+        "Один раз надайте доступ мікрофону саме цьому розширенню. Chrome запам’ятає вибір як «Дозволити». Сайти у вкладках це не змінює — вони запитують доступ окремо.",
+      micPageAllowBtn: "Дозволити мікрофон",
+      micPageAllowedBtn: "Дозволено",
+      micPageSuccess:
+        "Мікрофон дозволено. Закрийте це вікно і натисніть «Почати» в бічній панелі.",
+      micPageDenied:
+        "Доступ заборонено. Натисніть «Дозволити» у запиті Chrome. Якщо раніше натиснули «Блокувати», зніміть блок у налаштуваннях мікрофона.",
+      micPageCloseHint:
+        "Після дозволу закрийте вікно і продовжте в бічній панелі.",
+      recorderDocTitle: "Запис — Голос у Текст Pro",
+      recorderHeading: "Мікрофон розширення",
+      recorderBody:
+        "Розпізнавання мови йде в цьому вікні розширення (не в бічній панелі і не на сайті). Один раз дозвольте мікрофон — Chrome запам’ятає «Дозволити».",
+      recorderNote:
+        "Це звичайна вкладка. Після дозволу мікрофона ви повернетесь на свою сторінку — вкладка лишиться в смужці. По «Стоп» вона закриється сама.",
+      recorderListening: "Йде запис… Вкладка працює у фоні.",
+      recorderIdle: "Готово. Натисніть «Почати» в бічній панелі.",
+      recorderGrantedClosing: "Мікрофон дозволено. Вікно закриється само…",
+      recorderClosing: "Готово. Закриваємо…",
       footerVersion: "v3.4.1 • Голос у Текст Pro",
       statusReady: "Готовий до запису",
       statusRecording: "Йде запис...",
@@ -354,7 +401,7 @@
         "Помилка: ваш браузер не підтримує Speech Recognition API.",
       errMic: "Немає доступу до мікрофона",
       errMicDetail:
-        "Немає доступу до мікрофона. Надайте доступ і оновіть сторінку.",
+        "Немає доступу до мікрофона розширення. Відкрийте сторінку дозволу, натисніть «Дозволити», потім знову «Почати».",
       errNetwork: "Помилка мережі",
       errNetworkDetail: "Помилка мережі. Перевірте з’єднання.",
       errRecognition: "Помилка розпізнавання",
@@ -366,12 +413,12 @@
       toastPasteOk: "Текст успішно вставлено",
       toastCopied: "Текст скопійовано в буфер обміну",
       toastCleared: "Текст очищено",
-      privacyTitle: 'Сповіщення про конфіденційність',
+      privacyTitle: "Сповіщення про конфіденційність",
       privacyBody:
-        'Розпізнавання мовлення використовує хмарний сервіс Google Web Speech через інтернет. Чернетки зберігаються локально в chrome.storage.local. Запис починається лише після згоди.',
-      privacyAccept: 'Прийняти й продовжити',
-      privacyPolicyLink: 'Політика конфіденційності',
-      privacyRequired: 'Спочатку прийміть сповіщення про конфіденційність',
+        "Розпізнавання мовлення використовує хмарний сервіс Google Web Speech через інтернет. Чернетки зберігаються локально в chrome.storage.local. Запис починається лише після згоди.",
+      privacyAccept: "Прийняти й продовжити",
+      privacyPolicyLink: "Політика конфіденційності",
+      privacyRequired: "Спочатку прийміть сповіщення про конфіденційність",
       recognitionErrPrefix: "Помилка:",
       sessionWords: sessionUk,
       punctQuestion: punctUkQ,
@@ -410,10 +457,33 @@
       punctMedium: "Medium (commas, periods)",
       punctHigh: "High (questions, exclamations)",
       instructionsHeading: "Microphone access required",
-      inst1: "Click the 🔒 icon in the address bar",
-      inst2: "Choose “Site settings”",
-      inst3: "Allow microphone access",
-      inst4: "Reload the page",
+      inst1: "Press the button below in this panel (on your current tab)",
+      inst2: "In the Chrome prompt, press Allow — it appears on this tab",
+      inst3: "Recording then runs in a background extension tab on the left",
+      inst4: "Websites are unchanged — permission is only for the extension",
+      btnMicSettings: "Allow microphone",
+      micPageDocTitle: "Microphone — Voice to Text Pro",
+      micPageHeading: "Allow microphone for this extension",
+      micPageBody:
+        "Grant the microphone to this extension once. Chrome will remember Allow. Websites in other tabs are not affected — they ask separately.",
+      micPageAllowBtn: "Allow microphone",
+      micPageAllowedBtn: "Allowed",
+      micPageSuccess:
+        "Microphone allowed. Close this window and press Start in the side panel.",
+      micPageDenied:
+        "Access denied. Click Allow in the Chrome prompt. If you previously chose Block, remove the block in Chrome microphone settings for this extension.",
+      micPageCloseHint:
+        "After allowing, close this window and continue in the side panel.",
+      recorderDocTitle: "Recorder — Voice to Text Pro",
+      recorderHeading: "Extension microphone",
+      recorderBody:
+        "Speech recognition runs in this extension tab (not in the side panel and not on the website). Allow the mic once — Chrome remembers Allow.",
+      recorderNote:
+        "Opens as the first (leftmost) tab in the background — you stay on your page. Closes on Stop. Only the first mic permission may briefly show this tab.",
+      recorderListening: "Recording… This tab stays in the background.",
+      recorderIdle: "Ready. Press Start in the side panel.",
+      recorderGrantedClosing: "Microphone allowed. This tab will close…",
+      recorderClosing: "Done. Closing tab…",
       footerVersion: "v3.4.1 • Voice to Text Pro",
       statusReady: "Ready to record",
       statusRecording: "Recording...",
@@ -425,7 +495,8 @@
       statusBrowserErr:
         "Error: Your browser does not support the Speech Recognition API.",
       errMic: "No microphone access",
-      errMicDetail: "No microphone access. Allow access and reload the page.",
+      errMicDetail:
+        "No microphone access. Press Allow microphone in this panel and confirm the Chrome prompt on this tab.",
       errNetwork: "Network error",
       errNetworkDetail: "Network error. Check your connection.",
       errRecognition: "Recognition error",
@@ -437,12 +508,12 @@
       toastPasteOk: "Text inserted successfully",
       toastCopied: "Text copied to clipboard",
       toastCleared: "Text cleared",
-      privacyTitle: 'Privacy notice',
+      privacyTitle: "Privacy notice",
       privacyBody:
-        'Speech recognition uses Google\'s Web Speech service over the internet. Drafts are stored locally in chrome.storage.local. Recording starts only after you accept.',
-      privacyAccept: 'Accept and continue',
-      privacyPolicyLink: 'Privacy Policy',
-      privacyRequired: 'Accept the privacy notice before recording',
+        "Speech recognition uses Google's Web Speech service over the internet. Drafts are stored locally in chrome.storage.local. Recording starts only after you accept.",
+      privacyAccept: "Accept and continue",
+      privacyPolicyLink: "Privacy Policy",
+      privacyRequired: "Accept the privacy notice before recording",
       recognitionErrPrefix: "Error:",
       sessionWords: sessionEn,
       punctQuestion: punctEnQ,
@@ -481,10 +552,35 @@
       punctMedium: "Medio (comas, puntos)",
       punctHigh: "Alto (preguntas, exclamaciones)",
       instructionsHeading: "Se necesita acceso al micrófono",
-      inst1: "Pulse el icono 🔒 en la barra de direcciones",
-      inst2: "Elija «Configuración del sitio»",
-      inst3: "Permita el acceso al micrófono",
-      inst4: "Recargue la página",
+      inst1: "Pulse el botón de abajo para abrir la página de la extensión",
+      inst2: "Pulse «Permitir micrófono» y confirme en Chrome",
+      inst3:
+        "Chrome recordará Permitir para la extensión (los sitios no cambian)",
+      inst4: "Cierre la ventana y pulse Iniciar otra vez en el panel",
+      btnMicSettings: "Permitir micrófono en la extensión",
+      micPageDocTitle: "Micrófono — Voz a Texto Pro",
+      micPageHeading: "Permitir el micrófono a la extensión",
+      micPageBody:
+        "Conceda el micrófono a esta extensión una vez. Chrome recordará Permitir. Los sitios en otras pestañas no se ven afectados.",
+      micPageAllowBtn: "Permitir micrófono",
+      micPageAllowedBtn: "Permitido",
+      micPageSuccess:
+        "Micrófono permitido. Cierre esta ventana y pulse Iniciar en el panel.",
+      micPageDenied:
+        "Acceso denegado. Pulse Permitir en el aviso de Chrome o quite el bloqueo en la configuración del micrófono.",
+      micPageCloseHint:
+        "Tras permitir, cierre la ventana y continúe en el panel lateral.",
+      recorderDocTitle: "Grabadora — Voz a Texto Pro",
+      recorderHeading: "Micrófono de la extensión",
+      recorderBody:
+        "El reconocimiento se ejecuta en esta ventana de la extensión (no en el panel ni en el sitio). Permita el micro una vez.",
+      recorderNote:
+        "Mantenga esta ventana abierta al grabar. Use Iniciar / Detener en el panel.",
+      recorderListening:
+        "Grabando… Puede minimizar, pero no cierre la ventana.",
+      recorderIdle: "Listo. Pulse Iniciar en el panel lateral.",
+      recorderGrantedClosing: "Micrófono permitido. Esta ventana se cerrará…",
+      recorderClosing: "Listo. Cerrando…",
       footerVersion: "v3.4.1 • Voz a Texto Pro",
       statusReady: "Listo para grabar",
       statusRecording: "Grabando...",
@@ -495,7 +591,8 @@
       statusErrorGeneric: "Se produjo un error",
       statusBrowserErr: "Error: su navegador no admite Speech Recognition API.",
       errMic: "Sin acceso al micrófono",
-      errMicDetail: "Sin acceso al micrófono. Permítalo y recargue la página.",
+      errMicDetail:
+        "Sin acceso al micrófono de la extensión. Abra la página de permiso, pulse Permitir y luego Iniciar.",
       errNetwork: "Error de red",
       errNetworkDetail: "Error de red. Compruebe la conexión.",
       errRecognition: "Error de reconocimiento",
@@ -507,12 +604,12 @@
       toastPasteOk: "Texto insertado correctamente",
       toastCopied: "Texto copiado al portapapeles",
       toastCleared: "Texto borrado",
-      privacyTitle: 'Aviso de privacidad',
+      privacyTitle: "Aviso de privacidad",
       privacyBody:
-        'El reconocimiento de voz usa el servicio Web Speech de Google por internet. Los borradores se guardan localmente en chrome.storage.local. La grabación solo empieza tras aceptar.',
-      privacyAccept: 'Aceptar y continuar',
-      privacyPolicyLink: 'Política de privacidad',
-      privacyRequired: 'Acepte el aviso de privacidad antes de grabar',
+        "El reconocimiento de voz usa el servicio Web Speech de Google por internet. Los borradores se guardan localmente en chrome.storage.local. La grabación solo empieza tras aceptar.",
+      privacyAccept: "Aceptar y continuar",
+      privacyPolicyLink: "Política de privacidad",
+      privacyRequired: "Acepte el aviso de privacidad antes de grabar",
       recognitionErrPrefix: "Error:",
       sessionWords(n) {
         return `Sesión: ${n} ${n === 1 ? "palabra" : "palabras"}`;
@@ -553,10 +650,36 @@
       punctMedium: "Moyen (virgules, points)",
       punctHigh: "Élevé (questions, exclamations)",
       instructionsHeading: "Accès au microphone requis",
-      inst1: "Cliquez sur l’icône 🔒 dans la barre d’adresse",
-      inst2: "Choisissez « Paramètres du site »",
-      inst3: "Autorisez l’accès au microphone",
-      inst4: "Rechargez la page",
+      inst1:
+        "Cliquez sur le bouton ci-dessous pour ouvrir la page de l’extension",
+      inst2: "Appuyez sur « Autoriser le micro » et confirmez dans Chrome",
+      inst3: "Chrome mémorise Autoriser pour l’extension (les sites inchangés)",
+      inst4:
+        "Fermez la fenêtre et appuyez à nouveau sur Démarrer dans le panneau",
+      btnMicSettings: "Autoriser le micro dans l’extension",
+      micPageDocTitle: "Microphone — Voix en Texte Pro",
+      micPageHeading: "Autoriser le micro pour l’extension",
+      micPageBody:
+        "Accordez le micro une fois à cette extension. Chrome mémorise Autoriser. Les sites des autres onglets ne sont pas concernés.",
+      micPageAllowBtn: "Autoriser le micro",
+      micPageAllowedBtn: "Autorisé",
+      micPageSuccess:
+        "Micro autorisé. Fermez cette fenêtre et appuyez sur Démarrer dans le panneau.",
+      micPageDenied:
+        "Accès refusé. Cliquez sur Autoriser dans l’invite Chrome, ou retirez le blocage dans les paramètres du micro.",
+      micPageCloseHint:
+        "Après autorisation, fermez la fenêtre et continuez dans le panneau latéral.",
+      recorderDocTitle: "Enregistreur — Voix en Texte Pro",
+      recorderHeading: "Micro de l’extension",
+      recorderBody:
+        "La reconnaissance tourne dans cette fenêtre d’extension (pas dans le panneau ni sur le site). Autorisez le micro une fois.",
+      recorderNote:
+        "Gardez cette fenêtre ouverte pendant l’enregistrement. Démarrez / Arrêtez depuis le panneau.",
+      recorderListening:
+        "Enregistrement… Vous pouvez réduire la fenêtre, sans la fermer.",
+      recorderIdle: "Prêt. Appuyez sur Démarrer dans le panneau latéral.",
+      recorderGrantedClosing: "Micro autorisé. Cette fenêtre va se fermer…",
+      recorderClosing: "Terminé. Fermeture…",
       footerVersion: "v3.4.1 • Voix en Texte Pro",
       statusReady: "Prêt à enregistrer",
       statusRecording: "Enregistrement...",
@@ -569,7 +692,7 @@
         "Erreur : votre navigateur ne prend pas en charge Speech Recognition API.",
       errMic: "Pas d’accès au microphone",
       errMicDetail:
-        "Pas d’accès au microphone. Autorisez l’accès et rechargez la page.",
+        "Pas d’accès au micro de l’extension. Ouvrez la page d’autorisation, autorisez, puis appuyez à nouveau sur Démarrer.",
       errNetwork: "Erreur réseau",
       errNetworkDetail: "Erreur réseau. Vérifiez la connexion.",
       errRecognition: "Erreur de reconnaissance",
@@ -581,12 +704,12 @@
       toastPasteOk: "Texte inséré avec succès",
       toastCopied: "Texte copié dans le presse-papiers",
       toastCleared: "Texte effacé",
-      privacyTitle: 'Avis de confidentialité',
+      privacyTitle: "Avis de confidentialité",
       privacyBody:
-        'La reconnaissance vocale utilise le service Web Speech de Google via Internet. Les brouillons sont stockés localement dans chrome.storage.local. L\'enregistrement ne démarre qu\'après acceptation.',
-      privacyAccept: 'Accepter et continuer',
-      privacyPolicyLink: 'Politique de confidentialité',
-      privacyRequired: 'Acceptez l\'avis de confidentialité avant d\'enregistrer',
+        "La reconnaissance vocale utilise le service Web Speech de Google via Internet. Les brouillons sont stockés localement dans chrome.storage.local. L'enregistrement ne démarre qu'après acceptation.",
+      privacyAccept: "Accepter et continuer",
+      privacyPolicyLink: "Politique de confidentialité",
+      privacyRequired: "Acceptez l'avis de confidentialité avant d'enregistrer",
       recognitionErrPrefix: "Erreur :",
       sessionWords(n) {
         return `Session : ${n} ${n === 1 ? "mot" : "mots"}`;
@@ -627,10 +750,35 @@
       punctMedium: "Mittel (Kommas, Punkte)",
       punctHigh: "Hoch (Fragen, Ausrufe)",
       instructionsHeading: "Mikrofonzugriff erforderlich",
-      inst1: "Klicken Sie auf das 🔒-Symbol in der Adressleiste",
-      inst2: "„Website-Einstellungen“ wählen",
-      inst3: "Mikrofonzugriff erlauben",
-      inst4: "Seite neu laden",
+      inst1: "Klicken Sie unten, um die Erweiterungsseite zu öffnen",
+      inst2: "„Mikrofon erlauben“ drücken und in Chrome bestätigen",
+      inst3:
+        "Chrome speichert Zulassen für die Erweiterung (Websites unverändert)",
+      inst4: "Fenster schließen und im Panel erneut auf Start drücken",
+      btnMicSettings: "Mikrofon in der Erweiterung erlauben",
+      micPageDocTitle: "Mikrofon — Sprache zu Text Pro",
+      micPageHeading: "Mikrofon für die Erweiterung erlauben",
+      micPageBody:
+        "Erlauben Sie dem Mikrofon einmalig den Zugriff für diese Erweiterung. Chrome merkt sich Zulassen. Websites in anderen Tabs sind nicht betroffen.",
+      micPageAllowBtn: "Mikrofon erlauben",
+      micPageAllowedBtn: "Erlaubt",
+      micPageSuccess:
+        "Mikrofon erlaubt. Schließen Sie dieses Fenster und drücken Sie Start im Panel.",
+      micPageDenied:
+        "Zugriff verweigert. Klicken Sie in Chrome auf Zulassen oder entfernen Sie die Sperre in den Mikrofoneinstellungen.",
+      micPageCloseHint:
+        "Nach der Freigabe Fenster schließen und im Seitenpanel fortfahren.",
+      recorderDocTitle: "Aufnahme — Sprache zu Text Pro",
+      recorderHeading: "Mikrofon der Erweiterung",
+      recorderBody:
+        "Die Erkennung läuft in diesem Erweiterungsfenster (nicht im Panel und nicht auf der Website). Einmal erlauben.",
+      recorderNote:
+        "Fenster während der Aufnahme offen lassen. Start / Stopp im Seitenpanel.",
+      recorderListening:
+        "Aufnahme läuft… Fenster darf minimiert, aber nicht geschlossen werden.",
+      recorderIdle: "Bereit. Im Seitenpanel auf Start drücken.",
+      recorderGrantedClosing: "Mikrofon erlaubt. Dieses Fenster schließt sich…",
+      recorderClosing: "Fertig. Wird geschlossen…",
       footerVersion: "v3.4.1 • Sprache zu Text Pro",
       statusReady: "Bereit zur Aufnahme",
       statusRecording: "Aufnahme läuft...",
@@ -643,7 +791,7 @@
         "Fehler: Ihr Browser unterstützt die Speech Recognition API nicht.",
       errMic: "Kein Mikrofonzugriff",
       errMicDetail:
-        "Kein Mikrofonzugriff. Zugriff erlauben und Seite neu laden.",
+        "Kein Mikrofonzugriff für die Erweiterung. Öffnen Sie die Freigabeseite, erlauben Sie den Zugriff und drücken Sie erneut Start.",
       errNetwork: "Netzwerkfehler",
       errNetworkDetail: "Netzwerkfehler. Verbindung prüfen.",
       errRecognition: "Erkennungsfehler",
@@ -655,12 +803,13 @@
       toastPasteOk: "Text erfolgreich eingefügt",
       toastCopied: "Text in die Zwischenablage kopiert",
       toastCleared: "Text geleert",
-      privacyTitle: 'Datenschutzhinweis',
+      privacyTitle: "Datenschutzhinweis",
       privacyBody:
-        'Die Spracherkennung nutzt Googles Web-Speech-Dienst über das Internet. Entwürfe werden lokal in chrome.storage.local gespeichert. Die Aufnahme startet erst nach Ihrer Zustimmung.',
-      privacyAccept: 'Akzeptieren und fortfahren',
-      privacyPolicyLink: 'Datenschutzerklärung',
-      privacyRequired: 'Bitte akzeptieren Sie den Datenschutzhinweis vor der Aufnahme',
+        "Die Spracherkennung nutzt Googles Web-Speech-Dienst über das Internet. Entwürfe werden lokal in chrome.storage.local gespeichert. Die Aufnahme startet erst nach Ihrer Zustimmung.",
+      privacyAccept: "Akzeptieren und fortfahren",
+      privacyPolicyLink: "Datenschutzerklärung",
+      privacyRequired:
+        "Bitte akzeptieren Sie den Datenschutzhinweis vor der Aufnahme",
       recognitionErrPrefix: "Fehler:",
       sessionWords(n) {
         return `Sitzung: ${n} ${n === 1 ? "Wort" : "Wörter"}`;
@@ -701,10 +850,35 @@
       punctMedium: "Medio (virgole, punti)",
       punctHigh: "Alto (domande, esclamazioni)",
       instructionsHeading: "Accesso al microfono richiesto",
-      inst1: "Fai clic sull’icona 🔒 nella barra degli indirizzi",
-      inst2: "Scegli «Impostazioni sito»",
-      inst3: "Consenti l’accesso al microfono",
-      inst4: "Ricarica la pagina",
+      inst1: "Fai clic sul pulsante sotto per aprire la pagina dell’estensione",
+      inst2: "Premi «Consenti microfono» e conferma in Chrome",
+      inst3: "Chrome ricorda Consenti per l’estensione (i siti non cambiano)",
+      inst4: "Chiudi la finestra e premi di nuovo Avvia nel pannello",
+      btnMicSettings: "Consenti microfono nell’estensione",
+      micPageDocTitle: "Microfono — Voce in Testo Pro",
+      micPageHeading: "Consenti il microfono all’estensione",
+      micPageBody:
+        "Concedi il microfono una volta a questa estensione. Chrome ricorda Consenti. I siti nelle altre schede non sono interessati.",
+      micPageAllowBtn: "Consenti microfono",
+      micPageAllowedBtn: "Consentito",
+      micPageSuccess:
+        "Microfono consentito. Chiudi questa finestra e premi Avvia nel pannello.",
+      micPageDenied:
+        "Accesso negato. Fai clic su Consenti nella richiesta di Chrome oppure rimuovi il blocco nelle impostazioni del microfono.",
+      micPageCloseHint:
+        "Dopo aver consentito, chiudi la finestra e continua nel pannello laterale.",
+      recorderDocTitle: "Registratore — Voce in Testo Pro",
+      recorderHeading: "Microfono dell’estensione",
+      recorderBody:
+        "Il riconoscimento avviene in questa finestra dell’estensione (non nel pannello né sul sito). Consenti il microfono una volta.",
+      recorderNote:
+        "Tieni aperta questa finestra durante la registrazione. Avvia / Ferma dal pannello.",
+      recorderListening:
+        "Registrazione… Puoi ridurre la finestra, ma non chiuderla.",
+      recorderIdle: "Pronto. Premi Avvia nel pannello laterale.",
+      recorderGrantedClosing:
+        "Microfono consentito. Questa finestra si chiuderà…",
+      recorderClosing: "Fatto. Chiusura…",
       footerVersion: "v3.4.1 • Voce in Testo Pro",
       statusReady: "Pronto a registrare",
       statusRecording: "Registrazione in corso...",
@@ -717,7 +891,7 @@
         "Errore: il browser non supporta Speech Recognition API.",
       errMic: "Nessun accesso al microfono",
       errMicDetail:
-        "Nessun accesso al microfono. Consenti l’accesso e ricarica la pagina.",
+        "Nessun accesso al microfono dell’estensione. Apri la pagina di autorizzazione, consenti e premi di nuovo Avvia.",
       errNetwork: "Errore di rete",
       errNetworkDetail: "Errore di rete. Controlla la connessione.",
       errRecognition: "Errore di riconoscimento",
@@ -729,12 +903,13 @@
       toastPasteOk: "Testo inserito correttamente",
       toastCopied: "Testo copiato negli appunti",
       toastCleared: "Testo cancellato",
-      privacyTitle: 'Informativa sulla privacy',
+      privacyTitle: "Informativa sulla privacy",
       privacyBody:
-        'Il riconoscimento vocale usa il servizio Web Speech di Google via Internet. Le bozze sono salvate in locale in chrome.storage.local. La registrazione inizia solo dopo l\'accettazione.',
-      privacyAccept: 'Accetta e continua',
-      privacyPolicyLink: 'Informativa sulla privacy',
-      privacyRequired: 'Accetta l\'informativa sulla privacy prima di registrare',
+        "Il riconoscimento vocale usa il servizio Web Speech di Google via Internet. Le bozze sono salvate in locale in chrome.storage.local. La registrazione inizia solo dopo l'accettazione.",
+      privacyAccept: "Accetta e continua",
+      privacyPolicyLink: "Informativa sulla privacy",
+      privacyRequired:
+        "Accetta l'informativa sulla privacy prima di registrare",
       recognitionErrPrefix: "Errore:",
       sessionWords(n) {
         return `Sessione: ${n} ${n === 1 ? "parola" : "parole"}`;
@@ -775,10 +950,34 @@
       punctMedium: "中（読点・句点）",
       punctHigh: "高（疑問・感嘆）",
       instructionsHeading: "マイクの許可が必要です",
-      inst1: "アドレスバーの 🔒 をクリック",
-      inst2: "「サイトの設定」を開く",
-      inst3: "マイクを許可",
-      inst4: "ページを再読み込み",
+      inst1: "下のボタンで拡張機能の許可ページを開く",
+      inst2: "「マイクを許可」を押し、Chrome の確認で許可する",
+      inst3: "Chrome が拡張機能への許可を記憶します（サイトは変わりません）",
+      inst4: "ウィンドウを閉じ、パネルで再度「開始」を押す",
+      btnMicSettings: "拡張機能でマイクを許可",
+      micPageDocTitle: "マイク — 音声テキスト変換 Pro",
+      micPageHeading: "拡張機能にマイクを許可",
+      micPageBody:
+        "この拡張機能に一度だけマイクを許可してください。Chrome が許可を記憶します。他のタブのサイトには影響しません。",
+      micPageAllowBtn: "マイクを許可",
+      micPageAllowedBtn: "許可済み",
+      micPageSuccess:
+        "マイクを許可しました。このウィンドウを閉じ、サイドパネルで開始を押してください。",
+      micPageDenied:
+        "拒否されました。Chrome の確認で許可してください。以前ブロックした場合はマイク設定で解除してください。",
+      micPageCloseHint:
+        "許可後、ウィンドウを閉じてサイドパネルに戻ってください。",
+      recorderDocTitle: "録音 — 音声テキスト変換 Pro",
+      recorderHeading: "拡張機能のマイク",
+      recorderBody:
+        "音声認識はこの拡張機能ウィンドウで行います（サイドパネルやサイトではありません）。一度マイクを許可してください。",
+      recorderNote:
+        "録音中はこのウィンドウを閉じないでください。開始 / 停止はサイドパネルから。",
+      recorderListening: "録音中… 最小化は可能ですが、閉じないでください。",
+      recorderIdle: "準備完了。サイドパネルで開始を押してください。",
+      recorderGrantedClosing:
+        "マイクを許可しました。このウィンドウは自動で閉じます…",
+      recorderClosing: "完了。閉じています…",
       footerVersion: "v3.4.1 • 音声テキスト変換 Pro",
       statusReady: "録音の準備ができました",
       statusRecording: "録音中...",
@@ -791,7 +990,7 @@
         "エラー: お使いのブラウザは Speech Recognition API に対応していません。",
       errMic: "マイクにアクセスできません",
       errMicDetail:
-        "マイクにアクセスできません。許可してページを再読み込みしてください。",
+        "拡張機能のマイク許可がありません。許可ページで許可してから、もう一度開始を押してください。",
       errNetwork: "ネットワークエラー",
       errNetworkDetail: "ネットワークを確認してください。",
       errRecognition: "認識エラー",
@@ -803,12 +1002,12 @@
       toastPasteOk: "テキストを挿入しました",
       toastCopied: "クリップボードにコピーしました",
       toastCleared: "テキストを消去しました",
-      privacyTitle: 'プライバシー通知',
+      privacyTitle: "プライバシー通知",
       privacyBody:
-        '音声認識はインターネット経由で Google の Web Speech サービスを使用します。下書きは chrome.storage.local にローカル保存されます。録音は同意後にのみ開始されます。',
-      privacyAccept: '同意して続ける',
-      privacyPolicyLink: 'プライバシーポリシー',
-      privacyRequired: '録音の前にプライバシー通知に同意してください',
+        "音声認識はインターネット経由で Google の Web Speech サービスを使用します。下書きは chrome.storage.local にローカル保存されます。録音は同意後にのみ開始されます。",
+      privacyAccept: "同意して続ける",
+      privacyPolicyLink: "プライバシーポリシー",
+      privacyRequired: "録音の前にプライバシー通知に同意してください",
       recognitionErrPrefix: "エラー:",
       sessionWords(n) {
         return `セッション: ${n} 語`;
@@ -849,10 +1048,32 @@
       punctMedium: "보통 (쉼표, 마침표)",
       punctHigh: "높음 (물음표, 느낌표)",
       instructionsHeading: "마이크 권한이 필요합니다",
-      inst1: "주소 표시줄의 🔒 아이콘 클릭",
-      inst2: "「사이트 설정」 선택",
-      inst3: "마이크 허용",
-      inst4: "페이지 새로고침",
+      inst1: "아래 버튼으로 확장 프로그램 권한 페이지 열기",
+      inst2: "「마이크 허용」을 누르고 Chrome 확인에서 허용",
+      inst3: "Chrome이 확장 프로그램 허용을 기억합니다(사이트는 그대로)",
+      inst4: "창을 닫고 패널에서 다시 시작을 누르세요",
+      btnMicSettings: "확장 프로그램에서 마이크 허용",
+      micPageDocTitle: "마이크 — 음성을 텍스트로 Pro",
+      micPageHeading: "확장 프로그램에 마이크 허용",
+      micPageBody:
+        "이 확장 프로그램에 마이크를 한 번 허용하세요. Chrome이 허용을 기억합니다. 다른 탭의 사이트에는 영향이 없습니다.",
+      micPageAllowBtn: "마이크 허용",
+      micPageAllowedBtn: "허용됨",
+      micPageSuccess:
+        "마이크가 허용되었습니다. 이 창을 닫고 사이드 패널에서 시작을 누르세요.",
+      micPageDenied:
+        "거부되었습니다. Chrome 확인에서 허용하세요. 이전에 차단했다면 마이크 설정에서 해제하세요.",
+      micPageCloseHint: "허용 후 창을 닫고 사이드 패널로 돌아가세요.",
+      recorderDocTitle: "녹음 — 음성을 텍스트로 Pro",
+      recorderHeading: "확장 프로그램 마이크",
+      recorderBody:
+        "음성 인식은 이 확장 프로그램 창에서 실행됩니다(사이드 패널/사이트 아님). 마이크를 한 번 허용하세요.",
+      recorderNote:
+        "녹음 중에는 이 창을 닫지 마세요. 시작 / 정지는 사이드 패널에서.",
+      recorderListening: "녹음 중… 최소화는 가능하지만 닫지 마세요.",
+      recorderIdle: "준비됨. 사이드 패널에서 시작을 누르세요.",
+      recorderGrantedClosing: "마이크가 허용되었습니다. 이 창이 곧 닫힙니다…",
+      recorderClosing: "완료. 닫는 중…",
       footerVersion: "v3.4.1 • 음성을 텍스트로 Pro",
       statusReady: "녹음 준비됨",
       statusRecording: "녹음 중...",
@@ -865,7 +1086,7 @@
         "오류: 브라우저가 Speech Recognition API를 지원하지 않습니다.",
       errMic: "마이크 액세스 없음",
       errMicDetail:
-        "마이크 액세스가 없습니다. 허용 후 페이지를 새로고침하세요.",
+        "확장 프로그램 마이크 권한이 없습니다. 권한 페이지에서 허용한 뒤 다시 시작을 누르세요.",
       errNetwork: "네트워크 오류",
       errNetworkDetail: "네트워크 오류. 연결을 확인하세요.",
       errRecognition: "인식 오류",
@@ -877,12 +1098,12 @@
       toastPasteOk: "텍스트가 삽입되었습니다",
       toastCopied: "클립보드에 복사됨",
       toastCleared: "텍스트 지워짐",
-      privacyTitle: '개인정보 안내',
+      privacyTitle: "개인정보 안내",
       privacyBody:
-        '음성 인식은 인터넷을 통해 Google Web Speech 서비스를 사용합니다. 초안은 chrome.storage.local에 로컬로 저장됩니다. 동의 후에만 녹음이 시작됩니다.',
-      privacyAccept: '동의하고 계속',
-      privacyPolicyLink: '개인정보 처리방침',
-      privacyRequired: '녹음 전에 개인정보 안내에 동의해 주세요',
+        "음성 인식은 인터넷을 통해 Google Web Speech 서비스를 사용합니다. 초안은 chrome.storage.local에 로컬로 저장됩니다. 동의 후에만 녹음이 시작됩니다.",
+      privacyAccept: "동의하고 계속",
+      privacyPolicyLink: "개인정보 처리방침",
+      privacyRequired: "녹음 전에 개인정보 안내에 동의해 주세요",
       recognitionErrPrefix: "오류:",
       sessionWords(n) {
         return `세션: ${n}단어`;
@@ -923,10 +1144,30 @@
       punctMedium: "中（逗号、句号）",
       punctHigh: "高（问号、感叹号）",
       instructionsHeading: "需要麦克风权限",
-      inst1: "点击地址栏中的 🔒 图标",
-      inst2: "选择「网站设置」",
-      inst3: "允许使用麦克风",
-      inst4: "刷新页面",
+      inst1: "点击下方按钮打开扩展权限页",
+      inst2: "点击「允许麦克风」并在 Chrome 提示中确认",
+      inst3: "Chrome 会记住对本扩展的允许（网站不受影响）",
+      inst4: "关闭窗口后在面板中再次点击开始",
+      btnMicSettings: "在扩展中允许麦克风",
+      micPageDocTitle: "麦克风 — 语音转文本 Pro",
+      micPageHeading: "允许扩展使用麦克风",
+      micPageBody:
+        "请为本扩展授予一次麦克风权限。Chrome 会记住允许。其他标签页中的网站不受影响。",
+      micPageAllowBtn: "允许麦克风",
+      micPageAllowedBtn: "已允许",
+      micPageSuccess: "已允许麦克风。请关闭此窗口并在侧边栏点击开始。",
+      micPageDenied:
+        "已拒绝。请在 Chrome 提示中点击允许；若曾选择阻止，请在麦克风设置中解除。",
+      micPageCloseHint: "允许后关闭窗口，继续在侧边栏操作。",
+      recorderDocTitle: "录音 — 语音转文本 Pro",
+      recorderHeading: "扩展麦克风",
+      recorderBody:
+        "语音识别在此扩展窗口中运行（不在侧边栏或网站上）。请允许一次麦克风。",
+      recorderNote: "录音时请保持此窗口打开。在侧边栏使用开始 / 停止。",
+      recorderListening: "正在录音… 可以最小化，但请勿关闭。",
+      recorderIdle: "就绪。请在侧边栏点击开始。",
+      recorderGrantedClosing: "已允许麦克风。窗口即将自动关闭…",
+      recorderClosing: "完成。正在关闭…",
       footerVersion: "v3.4.1 • 语音转文本 Pro",
       statusReady: "准备录音",
       statusRecording: "正在录音...",
@@ -937,7 +1178,7 @@
       statusErrorGeneric: "发生错误",
       statusBrowserErr: "错误：您的浏览器不支持 Speech Recognition API。",
       errMic: "无麦克风权限",
-      errMicDetail: "无麦克风权限。请允许后刷新页面。",
+      errMicDetail: "扩展没有麦克风权限。请在权限页允许后再次点击开始。",
       errNetwork: "网络错误",
       errNetworkDetail: "网络错误，请检查连接。",
       errRecognition: "识别错误",
@@ -949,12 +1190,12 @@
       toastPasteOk: "文本插入成功",
       toastCopied: "文本已复制到剪贴板",
       toastCleared: "文本已清除",
-      privacyTitle: '隐私声明',
+      privacyTitle: "隐私声明",
       privacyBody:
-        '语音识别通过互联网使用 Google Web Speech 服务。草稿保存在本地 chrome.storage.local。仅在您同意后才会开始录音。',
-      privacyAccept: '同意并继续',
-      privacyPolicyLink: '隐私政策',
-      privacyRequired: '开始录音前请先同意隐私声明',
+        "语音识别通过互联网使用 Google Web Speech 服务。草稿保存在本地 chrome.storage.local。仅在您同意后才会开始录音。",
+      privacyAccept: "同意并继续",
+      privacyPolicyLink: "隐私政策",
+      privacyRequired: "开始录音前请先同意隐私声明",
       recognitionErrPrefix: "错误：",
       sessionWords(n) {
         return `会话：${n} 个词`;

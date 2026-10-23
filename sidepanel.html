@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voice to Text Pro</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="animated-bg" aria-hidden="true">
@@ -109,11 +109,7 @@
               autocomplete="off"
             ></textarea>
           </div>
-          <section
-            class="editor-overlay"
-            id="editorOverlay"
-            aria-label="Hint"
-          >
+          <section class="editor-overlay" id="editorOverlay" aria-label="Hint">
             <div class="overlay-icon" aria-hidden="true">🎙️</div>
             <div class="overlay-text">Press “Start” and speak</div>
             <div class="overlay-subtext">Text will appear here</div>
@@ -316,7 +312,11 @@
               >Privacy Policy</a
             >
           </p>
-          <button type="button" class="control-btn primary-btn" id="privacyAcceptBtn">
+          <button
+            type="button"
+            class="control-btn primary-btn"
+            id="privacyAcceptBtn"
+          >
             <span>Accept and continue</span>
           </button>
         </div>
@@ -349,11 +349,26 @@
           </div>
           <div class="instructions-content">
             <ol>
-              <li>Click the 🔒 icon in the address bar</li>
-              <li>Choose “Site settings”</li>
-              <li>Allow microphone access</li>
-              <li>Reload the page</li>
+              <li>
+                Press the button below in this panel (on your current tab)
+              </li>
+              <li>
+                In the Chrome prompt, press Allow — it appears on this tab
+              </li>
+              <li>
+                Recording then runs in a background extension tab on the left
+              </li>
+              <li>
+                Websites are unchanged — permission is only for the extension
+              </li>
             </ol>
+            <button
+              type="button"
+              class="control-btn primary-btn"
+              id="micSettingsBtn"
+            >
+              <span>Allow microphone</span>
+            </button>
           </div>
         </div>
       </section>

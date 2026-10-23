@@ -35,12 +35,12 @@ The extension works in the **Chrome Side Panel** and provides multilingual speec
 
 The extension includes four punctuation modes:
 
-| Mode   | Description                                      |
-| ------ | ------------------------------------------------ |
-| Off    | Automatic punctuation is disabled                |
-| Low    | Minimal punctuation assistance                   |
-| Medium | Balanced punctuation assistance                  |
-| High   | Advanced punctuation with language-specific rules|
+| Mode   | Description                                       |
+| ------ | ------------------------------------------------- |
+| Off    | Automatic punctuation is disabled                 |
+| Low    | Minimal punctuation assistance                    |
+| Medium | Balanced punctuation assistance                   |
+| High   | Advanced punctuation with language-specific rules |
 
 Smart punctuation features:
 
@@ -159,21 +159,21 @@ The extension uses `chrome.storage.local` for settings and draft persistence.
 
 Main files:
 
-| File                             | Description                                                   |
-| -------------------------------- | ------------------------------------------------------------- |
-| `manifest.json`                  | Manifest V3 configuration                                     |
-| `background.js`                  | Service worker for commands, menu, notifications, injection   |
-| `sidepanel.html`                 | Side panel markup                                             |
-| `sidepanel.js`                   | Main side panel logic                                         |
-| `i18n.js`                        | Localization and punctuation rules                            |
-| `content.js`                     | On-demand paste helper (injected after a user gesture)        |
-| `privacy.html`                   | Privacy Policy (package copy; host publicly for CWS)          |
-| `styles.css`                     | Styles and animations                                         |
-| `icons/`                         | Extension icons                                               |
-| `LICENSE`                        | MIT License                                                   |
-| `README.md`                      | Project overview and usage guide                              |
-| `CHANGELOG.md`                   | Version history                                               |
-| `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Release and manual testing checklist                          |
+| File                             | Description                                                 |
+| -------------------------------- | ----------------------------------------------------------- |
+| `manifest.json`                  | Manifest V3 configuration                                   |
+| `background.js`                  | Service worker for commands, menu, notifications, injection |
+| `sidepanel.html`                 | Side panel markup                                           |
+| `sidepanel.js`                   | Main side panel logic                                       |
+| `i18n.js`                        | Localization and punctuation rules                          |
+| `content.js`                     | On-demand paste helper (injected after a user gesture)      |
+| `privacy.html`                   | Privacy Policy (package copy; host publicly for CWS)        |
+| `styles.css`                     | Styles and animations                                       |
+| `icons/`                         | Extension icons                                             |
+| `LICENSE`                        | MIT License                                                 |
+| `README.md`                      | Project overview and usage guide                            |
+| `CHANGELOG.md`                   | Version history                                             |
+| `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Release and manual testing checklist                        |
 
 ---
 
@@ -193,13 +193,12 @@ There is no permanent `content_scripts` registration. After a user gesture, the 
 
 ### Microphone is not available
 
-Check Chrome microphone permissions:
+Chrome side panels cannot reliably use the microphone. This extension runs speech recognition in a background **extension tab**.
 
-1. Click the lock icon in the address bar.
-2. Open site settings.
-3. Find microphone permissions.
-4. Select **Allow**.
-5. Reload the page or extension.
+1. Press **Start** (or **Allow microphone**) in the side panel — Chrome’s mic prompt appears on **this tab** (where the panel is open).
+2. Press **Allow** once. Permission is for the extension, not the website.
+3. A recorder tab opens **first (leftmost)** in the **background** and keeps listening.
+4. Press **Stop** — the recorder tab closes automatically.
 
 ### Recognition does not start
 
@@ -372,14 +371,14 @@ Averixor
 
 ## Клавіатурні скорочення
 
-| Комбінація             | Дія                                |
-| ---------------------- | ---------------------------------- |
-| `Ctrl+Shift+1`         | Почати запис                       |
-| `Ctrl+Shift+2`         | Зупинити запис                     |
-| `Ctrl+Shift+I`         | Вставити текст в активне поле      |
-| `Ctrl+Shift+9`         | Відкрити або закрити бокову панель |
-| `Ctrl+C` у полі        | Копіювати текст                    |
-| `Ctrl+Del`             | Очистити текст                     |
+| Комбінація      | Дія                                |
+| --------------- | ---------------------------------- |
+| `Ctrl+Shift+1`  | Почати запис                       |
+| `Ctrl+Shift+2`  | Зупинити запис                     |
+| `Ctrl+Shift+I`  | Вставити текст в активне поле      |
+| `Ctrl+Shift+9`  | Відкрити або закрити бокову панель |
+| `Ctrl+C` у полі | Копіювати текст                    |
+| `Ctrl+Del`      | Очистити текст                     |
 
 На macOS:
 
@@ -443,21 +442,21 @@ Averixor
 
 Основні файли:
 
-| Файл                             | Опис                                                      |
-| -------------------------------- | --------------------------------------------------------- |
-| `manifest.json`                  | Конфігурація Manifest V3                                  |
-| `background.js`                  | Service Worker для команд, меню, сповіщень та скриптів    |
-| `sidepanel.html`                 | Розмітка бокової панелі                                   |
-| `sidepanel.js`                   | Основна логіка бокової панелі                             |
-| `i18n.js`                        | Локалізація та правила пунктуації                         |
-| `content.js`                     | Paste-helper за жестом користувача                        |
-| `privacy.html`                   | Політика конфіденційності (для CWS потрібен публічний URL)|
-| `styles.css`                     | Стилі та анімації                                         |
-| `icons/`                         | Іконки розширення                                         |
-| `LICENSE`                        | Ліцензія MIT                                              |
-| `README.md`                      | Огляд проєкту та інструкція користувача                   |
-| `CHANGELOG.md`                   | Історія змін                                              |
-| `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Чеклист релізу та ручного тестування                      |
+| Файл                             | Опис                                                       |
+| -------------------------------- | ---------------------------------------------------------- |
+| `manifest.json`                  | Конфігурація Manifest V3                                   |
+| `background.js`                  | Service Worker для команд, меню, сповіщень та скриптів     |
+| `sidepanel.html`                 | Розмітка бокової панелі                                    |
+| `sidepanel.js`                   | Основна логіка бокової панелі                              |
+| `i18n.js`                        | Локалізація та правила пунктуації                          |
+| `content.js`                     | Paste-helper за жестом користувача                         |
+| `privacy.html`                   | Політика конфіденційності (для CWS потрібен публічний URL) |
+| `styles.css`                     | Стилі та анімації                                          |
+| `icons/`                         | Іконки розширення                                          |
+| `LICENSE`                        | Ліцензія MIT                                               |
+| `README.md`                      | Огляд проєкту та інструкція користувача                    |
+| `CHANGELOG.md`                   | Історія змін                                               |
+| `CHECKLIST_VOICE_TO_TEXT_PRO.md` | Чеклист релізу та ручного тестування                       |
 
 ---
 

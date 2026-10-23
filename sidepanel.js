@@ -1,13 +1,13 @@
 // ===========================================
 // sidepanel.js - Chrome side panel page
-// SpeechRecognition, applyAppLocale(), storage, shortcuts, paste to tab.
+// UI + transcript; SpeechRecognition runs in recorder.html (extension window).
 // ===========================================
 
 class SpeechToTextPro {
   constructor() {
-    this.recognition = null;
     this.isRecording = false;
     this.isPaused = false;
+    this.recordingNotifyShown = false;
     this.finalTranscript = "";
     this.interimTranscript = "";
     this.microphoneAccessGranted = false;
@@ -35,11 +35,161 @@ class SpeechToTextPro {
   }
 
   connectSidePanelPort() {
+    if (!chrome.runtime?.id) return;
+
     try {
       this.sidePanelPort = chrome.runtime.connect({ name: "sidePanel" });
+      this.sidePanelPort.onMessage.addListener((msg) =>
+        this.handleRecorderBridgeMessage(msg),
+      );
+      this.sidePanelPort.onDisconnect.addListener(() => {
+        this.sidePanelPort = null;
+        setTimeout(() => this.connectSidePanelPort(), 300);
+      });
     } catch (error) {
-      console.error("Failed to connect side panel port:", error);
+      setTimeout(() => this.connectSidePanelPort(), 500);
     }
+  }
+
+  postToBackground(message) {
+    if (!chrome.runtime?.id) return;
+    if (this.sidePanelPort) {
+      try {
+        this.sidePanelPort.postMessage(message);
+        return;
+      } catch (e) {
+        this.sidePanelPort = null;
+      }
+    }
+    this.connectSidePanelPort();
+    setTimeout(() => {
+      if (this.sidePanelPort) {
+        try {
+          this.sidePanelPort.postMessage(message);
+        } catch (e) {
+          /* ignore */
+        }
+      }
+    }, 100);
+  }
+
+  safeRuntimeSend(message) {
+    if (!chrome.runtime?.id) return Promise.resolve();
+    try {
+      const result = chrome.runtime.sendMessage(message);
+      if (result && typeof result.then === "function") {
+        return result.catch(() => {});
+      }
+    } catch (e) {
+      /* Extension context invalidated after reload */
+    }
+    return Promise.resolve();
+  }
+
+  handleRecorderBridgeMessage(msg) {
+    if (!msg) return;
+
+    if (msg.action === "startRecording") {
+      this.startRecording();
+      return;
+    }
+    if (msg.action === "stopRecording") {
+      this.stopRecording();
+      return;
+    }
+
+    if (!msg.type) return;
+
+    if (msg.type === "recorderResult" && Array.isArray(msg.chunks)) {
+      this.applyRecorderChunks(msg.chunks);
+      return;
+    }
+
+    if (msg.type === "recorderStarted") {
+      this.isRecording = true;
+      this.isPaused = false;
+      this.instructions.style.display = "none";
+      this.updateUIStatus("recording");
+      this.startTimer();
+      if (!this.recordingNotifyShown) {
+        this.recordingNotifyShown = true;
+      }
+      return;
+    }
+
+    if (msg.type === "recorderPaused") {
+      this.isPaused = true;
+      this.isRecording = false;
+      this.stopTimer();
+      this.updateUIStatus("paused", this.pack.statusPaused);
+      return;
+    }
+
+    if (msg.type === "recorderStopped" || msg.type === "recorderWindowClosed") {
+      const wasLive = this.isRecording || this.isPaused;
+      this.isRecording = false;
+      this.isPaused = false;
+      this.recordingNotifyShown = false;
+      this.stopTimer();
+      if (wasLive || msg.type === "recorderStopped") {
+        this.updateUIStatus("idle", this.pack.statusStopped);
+      }
+      return;
+    }
+
+    if (msg.type === "recorderError") {
+      const errorCode = msg.error || "unknown";
+      this.isRecording = false;
+      this.isPaused = false;
+      this.recordingNotifyShown = false;
+      this.stopTimer();
+      if (errorCode === "not-allowed" || errorCode === "permission-denied") {
+        this.showMicrophoneDenied();
+      } else if (errorCode === "network") {
+        this.updateUIStatus("error", this.pack.errNetwork);
+        this.status.textContent = this.pack.errNetworkDetail;
+      } else {
+        this.updateUIStatus("error", this.pack.errRecognition);
+      }
+      return;
+    }
+
+    if (msg.type === "micGranted") {
+      this.microphoneAccessGranted = true;
+      this.instructions.style.display = "none";
+      if (!this.isRecording) {
+        this.updateUIStatus("idle", this.pack.statusReady);
+      }
+      return;
+    }
+
+    if (msg.type === "needMicFocus") {
+      // Recorder could not get mic in the background tab — ask in the panel
+      // (the tab the user is looking at), never switch to the recorder tab.
+      this.showMicrophoneDenied();
+    }
+  }
+
+  applyRecorderChunks(chunks) {
+    let interimTranscript = "";
+    for (const chunk of chunks) {
+      const transcript = chunk.transcript || "";
+      if (chunk.isFinal) {
+        const formattedTranscript = this.formatText(transcript);
+        this.ensureTranscriptBoundary(formattedTranscript);
+        this.finalTranscript += formattedTranscript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    this.ensureTranscriptBoundary(interimTranscript);
+    this.interimTranscript = interimTranscript;
+    this.output.value = this.finalTranscript + this.interimTranscript;
+    this.output.scrollTop = this.output.scrollHeight;
+    this.updateStats();
+    this.updateEditorOverlay();
+    this.saveTextDraft();
   }
 
   initializeElements() {
@@ -58,6 +208,7 @@ class SpeechToTextPro {
     this.languageSelect = document.getElementById("language");
     this.autoPunctuationSelect = document.getElementById("autoPunctuation");
     this.instructions = document.getElementById("instructions");
+    this.micSettingsBtn = document.getElementById("micSettingsBtn");
     this.privacyConsent = document.getElementById("privacyConsent");
     this.privacyAcceptBtn = document.getElementById("privacyAcceptBtn");
     this.privacyPolicyLink = document.getElementById("privacyPolicyLink");
@@ -141,6 +292,12 @@ class SpeechToTextPro {
     [p.inst1, p.inst2, p.inst3, p.inst4].forEach((txt, i) => {
       if (lis[i] && txt) lis[i].textContent = txt;
     });
+    if (this.micSettingsBtn) {
+      setText(
+        this.micSettingsBtn.querySelector("span") || this.micSettingsBtn,
+        p.btnMicSettings || "Open microphone settings",
+      );
+    }
 
     setText(document.getElementById("privacyHeading"), p.privacyTitle);
     setText(document.getElementById("privacyBody"), p.privacyBody);
@@ -177,6 +334,11 @@ class SpeechToTextPro {
         this.acceptPrivacyConsent(),
       );
     }
+    if (this.micSettingsBtn) {
+      this.micSettingsBtn.addEventListener("click", () =>
+        this.openMicrophonePermissionPage(),
+      );
+    }
 
     this.languageSelect.addEventListener("change", () => {
       this.applyAppLocale();
@@ -207,89 +369,9 @@ class SpeechToTextPro {
     });
   }
 
-  static getSpeechRecognitionCtor() {
-    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
-  }
-
   checkBrowserSupport() {
-    if (!SpeechToTextPro.getSpeechRecognitionCtor()) {
-      this.status.textContent = this.pack.statusBrowserErr;
-      this.statusCard.classList.remove("status-info");
-      this.statusCard.classList.add("status-error");
-      this.startBtn.disabled = true;
-      this.pauseBtn.disabled = true;
-      this.stopBtn.disabled = true;
-    } else {
-      this.initRecognition();
-    }
-  }
-
-  initRecognition() {
-    const Recognition = SpeechToTextPro.getSpeechRecognitionCtor();
-    if (!Recognition) return;
-    this.recognition = new Recognition();
-    this.recognition.continuous = true;
-    this.recognition.interimResults = true;
-    this.recognition.lang = this.languageSelect.value;
-
-    this.setupRecognitionHandlers();
-  }
-
-  setupRecognitionHandlers() {
-    this.recognition.onstart = () => {
-      this.isRecording = true;
-      this.updateUIStatus("recording");
-      this.startTimer();
-      this.sendRecordingNotification();
-    };
-
-    this.recognition.onerror = (event) => {
-      console.error("Speech Recognition Error:", event);
-      this.stopTimer();
-
-      if (
-        event.error === "not-allowed" ||
-        event.error === "permission-denied"
-      ) {
-        this.microphoneAccessGranted = false;
-        this.instructions.style.display = "flex";
-        this.status.textContent = this.pack.errMicDetail;
-        this.isRecording = false;
-        this.isPaused = false;
-        this.updateUIStatus("error", this.pack.errMic);
-      } else if (event.error === "no-speech") {
-        if (this.isRecording) {
-          this.recognition.start();
-        }
-      } else if (event.error === "network") {
-        this.status.textContent = this.pack.errNetworkDetail;
-        this.isRecording = false;
-        this.isPaused = false;
-        this.updateUIStatus("error", this.pack.errNetwork);
-      } else {
-        this.isRecording = false;
-        this.isPaused = false;
-        this.updateUIStatus("error", this.pack.errRecognition);
-      }
-    };
-
-    this.recognition.onend = () => {
-      if (this.isRecording) {
-        console.log("Recognition ended automatically. Restarting...");
-        try {
-          this.recognition.start();
-        } catch (e) {
-          console.error("Failed to restart recognition:", e);
-          this.isRecording = false;
-          this.isPaused = false;
-          this.updateUIStatus("idle", this.pack.statusStopped);
-        }
-      } else if (!this.isPaused) {
-        this.updateUIStatus("idle", this.pack.statusStopped);
-      }
-    };
-
-    this.recognition.onresult = (event) => this.handleRecognitionResult(event);
+    // SpeechRecognition runs in recorder.html (extension window), not here.
+    // Side panel mic access is unreliable in Chrome.
   }
 
   syncTranscriptFromOutput() {
@@ -310,28 +392,6 @@ class SpeechToTextPro {
     this.interimTranscript = "";
   }
 
-  handleRecognitionResult(event) {
-    let interimTranscript = "";
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      const transcript = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        const formattedTranscript = this.formatText(transcript);
-        this.ensureTranscriptBoundary(formattedTranscript);
-        this.finalTranscript += formattedTranscript;
-      } else {
-        interimTranscript += transcript;
-      }
-    }
-
-    this.ensureTranscriptBoundary(interimTranscript);
-    this.interimTranscript = interimTranscript;
-    this.output.value = this.finalTranscript + this.interimTranscript;
-    this.output.scrollTop = this.output.scrollHeight;
-    this.updateStats();
-    this.updateEditorOverlay();
-    this.saveTextDraft();
-  }
-
   ensureTranscriptBoundary(nextText) {
     if (
       this.finalTranscript &&
@@ -343,7 +403,56 @@ class SpeechToTextPro {
     }
   }
 
-  startRecording() {
+  openMicrophonePermissionPage() {
+    // Request mic from the side panel (same tab the user is on) — not from
+    // the background recorder tab — so Chrome's permission UI appears here.
+    this.requestMicrophoneFromPanel().then((ok) => {
+      if (ok) {
+        this.instructions.style.display = "none";
+        this.showTransientStatus(
+          this.pack.recorderGrantedClosing || this.pack.statusReady,
+          2000,
+        );
+      } else {
+        this.showMicrophoneDenied();
+      }
+    });
+  }
+
+  showMicrophoneDenied() {
+    this.microphoneAccessGranted = false;
+    this.isRecording = false;
+    this.isPaused = false;
+    this.recordingNotifyShown = false;
+    this.clearRecordingNotification();
+    this.instructions.style.display = "flex";
+    this.status.textContent = this.pack.errMicDetail;
+    this.updateUIStatus("error", this.pack.errMic);
+  }
+
+  /**
+   * Ask for microphone on the side-panel origin while the user is still on
+   * the page tab that hosts the panel. Chrome attaches the prompt to that UI.
+   */
+  async requestMicrophoneFromPanel() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return false;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      this.microphoneAccessGranted = true;
+      chrome.storage.local
+        .set({ microphoneAccessGranted: true })
+        .catch(() => {});
+      return true;
+    } catch (e) {
+      this.microphoneAccessGranted = false;
+      return false;
+    }
+  }
+
+  async startRecording() {
     if (!this.privacyConsentAccepted) {
       this.showPrivacyConsent();
       this.showTransientStatus(this.pack.privacyRequired, 2500, true);
@@ -351,103 +460,69 @@ class SpeechToTextPro {
     }
 
     if (this.isPaused) {
-      this.resumeRecording();
+      await this.resumeRecording();
       return;
     }
 
-    if (!this.recognition) {
-      this.initRecognition();
-    }
-
-    if (!this.recognition) return;
-
-    this.recognition.lang = this.languageSelect.value;
     this.currentLanguage = this.languageSelect.value;
     this.finalTranscript = this.output.value;
     this.interimTranscript = "";
     this.isPaused = false;
-    this.isRecording = true;
+    this.updateUIStatus("preparing", this.pack.statusMicWait);
+    this.instructions.style.display = "none";
+    this.saveSettings();
 
-    try {
-      this.recognition.start();
-      this.updateUIStatus("preparing", this.pack.statusMicWait);
-      this.instructions.style.display = "none";
-      this.saveSettings();
-    } catch (e) {
-      console.error("Failed to start recognition:", e);
-      this.isRecording = false;
-      this.isPaused = false;
-      this.updateUIStatus("error", this.pack.errStartFailed);
-    }
-  }
-
-  pauseRecording() {
-    if (!this.recognition || !this.isRecording || this.isPaused) return;
-
-    this.isPaused = true;
-    this.isRecording = false;
-
-    try {
-      this.recognition.stop();
-    } catch (e) {
-      console.error("Failed to pause recognition:", e);
-      this.isPaused = false;
-      this.isRecording = true;
-      this.updateUIStatus("recording");
+    const micOk = await this.requestMicrophoneFromPanel();
+    if (!micOk) {
+      this.showMicrophoneDenied();
       return;
     }
 
-    this.stopTimer();
-    this.saveTextDraft();
-    this.updateUIStatus("paused", this.pack.statusPaused);
+    this.postToBackground({
+      type: "startRecording",
+      language: this.currentLanguage,
+    });
   }
 
-  resumeRecording() {
+  pauseRecording() {
+    if (!this.isRecording || this.isPaused) return;
+    this.saveTextDraft();
+    this.postToBackground({ type: "pauseRecording" });
+  }
+
+  async resumeRecording() {
     if (!this.privacyConsentAccepted) {
       this.showPrivacyConsent();
       this.showTransientStatus(this.pack.privacyRequired, 2500, true);
       return;
     }
 
-    if (!this.recognition) {
-      this.initRecognition();
-    }
-    if (!this.recognition || !this.isPaused) return;
+    if (!this.isPaused) return;
 
-    this.isPaused = false;
-    this.recognition.lang = this.languageSelect.value;
     this.currentLanguage = this.languageSelect.value;
     this.finalTranscript = this.output.value;
     this.interimTranscript = "";
-    this.isRecording = true;
+    this.updateUIStatus("preparing", this.pack.statusMicWait);
+    this.saveSettings();
 
-    try {
-      this.recognition.start();
-      this.updateUIStatus("preparing", this.pack.statusMicWait);
-      this.saveSettings();
-    } catch (e) {
-      console.error("Failed to resume recognition:", e);
-      this.isPaused = true;
-      this.isRecording = false;
-      this.updateUIStatus("paused", this.pack.statusPaused);
+    const micOk = await this.requestMicrophoneFromPanel();
+    if (!micOk) {
+      this.showMicrophoneDenied();
+      return;
     }
+
+    this.postToBackground({
+      type: "resumeRecording",
+      language: this.currentLanguage,
+    });
   }
 
   stopRecording() {
-    if (!this.recognition) return;
-
     this.isPaused = false;
-    const wasLive = this.isRecording;
     this.isRecording = false;
-
-    if (wasLive) {
-      try {
-        this.recognition.stop();
-      } catch (e) {
-        console.error("Failed to stop recognition:", e);
-      }
-    }
-
+    this.recordingNotifyShown = false;
+    this.clearRecordingNotification();
+    this.postToBackground({ type: "stopRecording" });
     this.stopTimer();
     this.saveTextDraft();
     this.updateUIStatus("idle", this.pack.statusStopped);
@@ -471,30 +546,30 @@ class SpeechToTextPro {
     };
 
     const requestPaste = () =>
-      chrome.runtime.sendMessage({
+      this.safeRuntimeSend({
         action: "pasteToActiveTab",
         textToPaste: textToInsert,
       });
 
-    requestPaste()
-      .then(async (response) => {
-        if (
-          response?.needsHostAccess &&
-          response.originPattern &&
-          chrome.permissions?.request
-        ) {
-          const granted = await chrome.permissions.request({
-            origins: [response.originPattern],
-          });
-          if (granted) {
-            return requestPaste().then(handlePasteResponse);
-          }
-        }
-        handlePasteResponse(response);
-      })
-      .catch(() => {
+    requestPaste().then(async (response) => {
+      if (!response) {
         this.showTransientStatus(this.pack.toastPasteFail, 2500, true);
-      });
+        return;
+      }
+      if (
+        response?.needsHostAccess &&
+        response.originPattern &&
+        chrome.permissions?.request
+      ) {
+        const granted = await chrome.permissions.request({
+          origins: [response.originPattern],
+        });
+        if (granted) {
+          return requestPaste().then(handlePasteResponse);
+        }
+      }
+      handlePasteResponse(response);
+    });
   }
 
   startTimer() {
@@ -644,11 +719,14 @@ class SpeechToTextPro {
     const done = () => this.showTransientStatus(this.pack.toastCopied);
 
     if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        this.output.select();
-        document.execCommand("copy");
-        done();
-      });
+      navigator.clipboard
+        .writeText(text)
+        .then(done)
+        .catch(() => {
+          this.output.select();
+          document.execCommand("copy");
+          done();
+        });
       return;
     }
 
@@ -695,7 +773,7 @@ class SpeechToTextPro {
     }
     clearTimeout(this._transientStatusTimer);
     this.saveTextDraft();
-    chrome.runtime.sendMessage({ action: "closeSidePanel" }).catch(() => {});
+    this.safeRuntimeSend({ action: "closeSidePanel" });
     window.close();
   }
 
@@ -723,8 +801,8 @@ class SpeechToTextPro {
     this.output.setAttribute("lang", this.languageSelect.value.split("-")[0]);
   }
 
-  sendRecordingNotification() {
-    chrome.runtime.sendMessage({ type: "recordingStarted" }).catch(() => {});
+  clearRecordingNotification() {
+    this.safeRuntimeSend({ type: "recordingStopped" });
   }
 
   handleGlobalKeyboardShortcuts(e) {
@@ -804,10 +882,6 @@ class SpeechToTextPro {
           this.showPrivacyConsent();
         } else {
           this.hidePrivacyConsent();
-        }
-
-        if (this.recognition) {
-          this.recognition.lang = this.languageSelect.value;
         }
 
         this.applyAppLocale();

@@ -617,8 +617,10 @@ body {
   font-size: 13px;
 }
 
-.privacy-card .control-btn {
+.privacy-card .control-btn,
+.instructions-content .control-btn {
   width: 100%;
+  margin-top: var(--space-4);
 }
 
 .instructions-header {
