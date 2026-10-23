@@ -1,10 +1,21 @@
 # Changelog
 
-## 3.4.1 — 2026-10-23
+## 3.4.1 — 2026-10-24
+
+### Fixed before release
+
+- Store zip is built by `npm run pack` with `manifest.json` at the archive root. Zip files are gitignored.
+- Recognition runs in `recorder.html`. Closing the side panel stops the microphone after a few seconds and closes the recorder tab. Recorder tab ids survive a service-worker restart in `chrome.storage.session`.
+- An error from the recorder is no longer immediately replaced by “stopped”. Autostart does not start recognition again on every port reconnect.
+- Insert asks for `https://*/*` and `http://*/*` when the tab URL is hidden. Paste tries `insertText` first, then a DOM fallback, and looks through frames and open shadow roots.
+- Removed `notifications` (nothing showed a recording toast). Removed the Ctrl+Delete and Ctrl+C overrides. Clear asks for confirmation. Insert shortcut is Ctrl+Shift+Enter. The empty-state overlay no longer blocks the textarea.
+- “AI punctuation” is named smart punctuation. A question mark is added only when the question word starts the phrase.
+- Interface language is separate from recognition language. Default comes from `chrome.i18n.getUILanguage()`. Drafts can be kept, cleared when the panel closes, or cleared after 7 days.
+- `minimum_chrome_version` is 116. `content.js` is injected without `i18n.js`.
 
 ### Security / privacy
 
-- Removed permanent `content_scripts` and broad `host_permissions`. Paste injects `i18n.js` + `content.js` via `chrome.scripting` only after Insert or context-menu paste; `optional_host_permissions` may be requested per origin.
+- Removed permanent `content_scripts` and broad `host_permissions`. Paste injects `content.js` via `chrome.scripting` only after Insert or context-menu paste; `optional_host_permissions` may be requested per origin, or for all http/https pages when the tab URL is unavailable.
 - In-panel privacy consent gate (`privacyConsentAccepted`) before recording; packaged `privacy.html` policy page.
 - Paste targets no longer include `password` or non-text input types (`number`, `date`, …).
 
@@ -12,7 +23,7 @@
 
 - Side panel open state tracked with a `runtime.connect({ name: "sidePanel" })` port instead of `sidePanelOpen` in storage.
 - In-panel shortcuts accept `Ctrl` or `Command` (`metaKey`).
-- Commands no longer fall back to tab-level speech recognition; STT is panel-only.
+- Commands no longer fall back to tab-level speech recognition. Speech recognition runs in the recorder tab.
 - `navigator.clipboard.writeText` for copy (with `execCommand` fallback).
 - `prefers-reduced-motion: reduce` disables orb/particle/wave animations.
 

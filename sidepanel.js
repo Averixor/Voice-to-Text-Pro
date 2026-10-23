@@ -7,16 +7,18 @@ class SpeechToTextPro {
   constructor() {
     this.isRecording = false;
     this.isPaused = false;
-    this.recordingNotifyShown = false;
     this.finalTranscript = "";
     this.interimTranscript = "";
-    this.microphoneAccessGranted = false;
     this.recordingStartTime = null;
     this.recordingTimer = null;
     this.spellCheckEnabled = false;
     this.autoPunctuationLevel = "medium";
     this.sessionWordCount = 0;
-    this.currentLanguage = "ru-RU";
+    this.currentLanguage = "en-US";
+    this.uiLanguage = "en-US";
+    this.windowId = null;
+    this.suppressStoppedUntil = 0;
+    this.draftRetention = "keep";
     this.saveTimeout = null;
     this._transientStatusTimer = null;
 
@@ -26,6 +28,14 @@ class SpeechToTextPro {
     this.awaitingMicGrant = false;
 
     this.initializeElements();
+    if (this.autoPunctuationSelect) {
+      this.autoPunctuationSelect.value = this.autoPunctuationLevel;
+    }
+    const fallback = this.defaultLocale();
+    this.currentLanguage = fallback;
+    this.uiLanguage = fallback;
+    if (this.languageSelect) this.languageSelect.value = fallback;
+    if (this.uiLanguageSelect) this.uiLanguageSelect.value = fallback;
     this.connectSidePanelPort();
     this.applyAppLocale();
     this.setupEventListeners();
@@ -48,16 +58,32 @@ class SpeechToTextPro {
         this.sidePanelPort = null;
         setTimeout(() => this.connectSidePanelPort(), 300);
       });
+      if (chrome.windows?.getCurrent) {
+        chrome.windows.getCurrent((win) => {
+          this.windowId = win?.id ?? null;
+          this.postToBackground({ type: "panelHello" });
+        });
+      }
     } catch (error) {
       setTimeout(() => this.connectSidePanelPort(), 500);
     }
   }
 
+  async ensureWindowId() {
+    if (this.windowId != null || !chrome.windows?.getCurrent) return this.windowId;
+    const win = await new Promise((resolve) => {
+      chrome.windows.getCurrent((current) => resolve(current || null));
+    });
+    this.windowId = win?.id ?? null;
+    return this.windowId;
+  }
+
   postToBackground(message) {
     if (!chrome.runtime?.id) return;
+    const payload = Object.assign({ windowId: this.windowId ?? undefined }, message);
     if (this.sidePanelPort) {
       try {
-        this.sidePanelPort.postMessage(message);
+        this.sidePanelPort.postMessage(payload);
         return;
       } catch (e) {
         this.sidePanelPort = null;
@@ -67,7 +93,7 @@ class SpeechToTextPro {
     setTimeout(() => {
       if (this.sidePanelPort) {
         try {
-          this.sidePanelPort.postMessage(message);
+          this.sidePanelPort.postMessage(payload);
         } catch (e) {
           /* ignore */
         }
@@ -107,15 +133,23 @@ class SpeechToTextPro {
       return;
     }
 
+    if (msg.type === "getLiveDraft") {
+      this.flushTextDraft();
+      this.postToBackground({
+        type: "liveDraft",
+        requestId: msg.requestId,
+        text: this.output?.value || "",
+      });
+      return;
+    }
+
     if (msg.type === "recorderStarted") {
       this.isRecording = true;
       this.isPaused = false;
+      this.awaitingMicGrant = false;
       this.instructions.style.display = "none";
       this.updateUIStatus("recording");
       this.startTimer();
-      if (!this.recordingNotifyShown) {
-        this.recordingNotifyShown = true;
-      }
       return;
     }
 
@@ -128,22 +162,33 @@ class SpeechToTextPro {
     }
 
     if (msg.type === "recorderStopped" || msg.type === "recorderWindowClosed") {
+      if (
+        msg.type === "recorderStopped" &&
+        this.suppressStoppedUntil &&
+        Date.now() < this.suppressStoppedUntil
+      ) {
+        return;
+      }
       const wasLive = this.isRecording || this.isPaused;
       this.isRecording = false;
       this.isPaused = false;
-      this.recordingNotifyShown = false;
+      this.awaitingMicGrant = false;
+      this.pendingStartAfterMic = false;
       this.stopTimer();
-      if (wasLive || msg.type === "recorderStopped") {
-        this.updateUIStatus("idle", this.pack.statusStopped);
-      }
+      this.updateUIStatus(
+        "idle",
+        wasLive ? this.pack.statusStopped : this.pack.statusReady,
+      );
       return;
     }
 
     if (msg.type === "recorderError") {
       const errorCode = msg.error || "unknown";
+      this.suppressStoppedUntil = Date.now() + 1500;
       this.isRecording = false;
       this.isPaused = false;
-      this.recordingNotifyShown = false;
+      this.awaitingMicGrant = false;
+      this.pendingStartAfterMic = false;
       this.stopTimer();
       if (errorCode === "not-allowed" || errorCode === "permission-denied") {
         this.showMicrophoneDenied();
@@ -157,7 +202,6 @@ class SpeechToTextPro {
     }
 
     if (msg.type === "micGranted") {
-      this.microphoneAccessGranted = true;
       this.awaitingMicGrant = false;
       this.instructions.style.display = "none";
 
@@ -188,6 +232,19 @@ class SpeechToTextPro {
   }
 
   applyRecorderChunks(chunks) {
+    const el = this.output;
+    const composed = this.finalTranscript + this.interimTranscript;
+    if (el.value !== composed) {
+      this.syncTranscriptFromOutput();
+    }
+
+    const selStart =
+      typeof el.selectionStart === "number" ? el.selectionStart : el.value.length;
+    const selEnd =
+      typeof el.selectionEnd === "number" ? el.selectionEnd : selStart;
+    const focused = document.activeElement === el;
+    const atEnd = selStart === selEnd && selStart === el.value.length;
+
     let interimTranscript = "";
     for (const chunk of chunks) {
       const transcript = chunk.transcript || "";
@@ -202,8 +259,15 @@ class SpeechToTextPro {
 
     this.ensureTranscriptBoundary(interimTranscript);
     this.interimTranscript = interimTranscript;
-    this.output.value = this.finalTranscript + this.interimTranscript;
-    this.output.scrollTop = this.output.scrollHeight;
+    const next = this.finalTranscript + this.interimTranscript;
+    el.value = next;
+    if (focused && !atEnd) {
+      const max = next.length;
+      el.selectionStart = Math.min(selStart, max);
+      el.selectionEnd = Math.min(selEnd, max);
+    } else if (!focused) {
+      el.scrollTop = el.scrollHeight;
+    }
     this.updateStats();
     this.updateEditorOverlay();
     this.saveTextDraft();
@@ -223,6 +287,8 @@ class SpeechToTextPro {
     this.recordingTime = document.getElementById("recordingTime");
     this.timeCount = document.getElementById("timeCount");
     this.languageSelect = document.getElementById("language");
+    this.uiLanguageSelect = document.getElementById("uiLanguage");
+    this.draftRetentionSelect = document.getElementById("draftRetention");
     this.autoPunctuationSelect = document.getElementById("autoPunctuation");
     this.instructions = document.getElementById("instructions");
     this.micSettingsBtn = document.getElementById("micSettingsBtn");
@@ -239,8 +305,10 @@ class SpeechToTextPro {
   }
 
   applyAppLocale() {
-    if (!globalThis.AppI18n || !this.languageSelect) return;
-    this.pack = globalThis.AppI18n.getPack(this.languageSelect.value);
+    if (!globalThis.AppI18n) return;
+    const uiValue = this.uiLanguageSelect?.value || this.uiLanguage;
+    this.pack = globalThis.AppI18n.getPack(uiValue);
+    this.uiLanguage = this.pack.id;
     const p = this.pack;
 
     document.documentElement.lang = p.htmlLang;
@@ -288,9 +356,26 @@ class SpeechToTextPro {
     setText(this.clearBtn.querySelector("span"), p.btnClear);
 
     setText(q('label[for="language"]'), p.labelLanguage);
-    for (let i = 0; i < this.languageSelect.options.length; i++) {
-      const opt = this.languageSelect.options[i];
-      if (p.langLabels[opt.value]) opt.textContent = p.langLabels[opt.value];
+    const fillLocaleOptions = (select) => {
+      if (!select) return;
+      for (let i = 0; i < select.options.length; i++) {
+        const opt = select.options[i];
+        if (p.langLabels[opt.value]) opt.textContent = p.langLabels[opt.value];
+      }
+    };
+    fillLocaleOptions(this.languageSelect);
+    fillLocaleOptions(this.uiLanguageSelect);
+    setText(q('label[for="uiLanguage"]'), p.labelUiLanguage || "Interface language:");
+    setText(
+      q('label[for="draftRetention"]'),
+      p.labelDraftRetention || "Draft storage:",
+    );
+    if (this.draftRetentionSelect) {
+      const draftOpts = this.draftRetentionSelect.options;
+      if (draftOpts[0]) draftOpts[0].textContent = p.draftKeep || "Keep until I clear";
+      if (draftOpts[1])
+        draftOpts[1].textContent = p.draftOnClose || "Clear when the panel closes";
+      if (draftOpts[2]) draftOpts[2].textContent = p.draftDays || "Clear after 7 days";
     }
 
     setText(q('label[for="autoPunctuation"]'), p.labelPunctuation);
@@ -371,9 +456,23 @@ class SpeechToTextPro {
     }
 
     this.languageSelect.addEventListener("change", () => {
-      this.applyAppLocale();
+      this.currentLanguage = this.languageSelect.value;
+      this.setupSpellCheck();
       this.saveSettings();
     });
+    if (this.uiLanguageSelect) {
+      this.uiLanguageSelect.addEventListener("change", () => {
+        this.uiLanguage = this.uiLanguageSelect.value;
+        this.applyAppLocale();
+        this.saveSettings();
+      });
+    }
+    if (this.draftRetentionSelect) {
+      this.draftRetentionSelect.addEventListener("change", () => {
+        this.draftRetention = this.draftRetentionSelect.value;
+        this.saveSettings();
+      });
+    }
     this.autoPunctuationSelect.addEventListener("change", (e) => {
       this.autoPunctuationLevel = e.target.value;
       this.saveSettings();
@@ -389,6 +488,15 @@ class SpeechToTextPro {
     document.addEventListener("keydown", (e) =>
       this.handleGlobalKeyboardShortcuts(e),
     );
+
+    const syncMotion = () => {
+      const inactive = document.hidden || !document.hasFocus();
+      document.body.classList.toggle("panel-inactive", inactive);
+    };
+    window.addEventListener("focus", syncMotion);
+    window.addEventListener("blur", syncMotion);
+    document.addEventListener("visibilitychange", syncMotion);
+    syncMotion();
 
     this.output.addEventListener("paste", () => {
       setTimeout(() => {
@@ -453,11 +561,10 @@ class SpeechToTextPro {
   }
 
   showMicrophoneDenied() {
-    this.microphoneAccessGranted = false;
     this.isRecording = false;
     this.isPaused = false;
-    this.recordingNotifyShown = false;
-    this.clearRecordingNotification();
+    this.awaitingMicGrant = false;
+    this.pendingStartAfterMic = false;
     this.instructions.style.display = "flex";
     this.status.textContent = this.pack.errMicDetail;
     this.updateUIStatus("error", this.pack.errMic);
@@ -483,6 +590,7 @@ class SpeechToTextPro {
     this.updateUIStatus("preparing", this.pack.statusMicWait);
     this.instructions.style.display = "none";
     this.saveSettings();
+    await this.ensureWindowId();
 
     // Open/reuse recorder beside this page; it hides after mic/start.
     this.postToBackground({
@@ -512,6 +620,7 @@ class SpeechToTextPro {
     this.pendingStartAfterMic = true;
     this.updateUIStatus("preparing", this.pack.statusMicWait);
     this.saveSettings();
+    await this.ensureWindowId();
 
     this.postToBackground({
       type: "resumeRecording",
@@ -522,28 +631,40 @@ class SpeechToTextPro {
   stopRecording() {
     this.isPaused = false;
     this.isRecording = false;
-    this.recordingNotifyShown = false;
-    this.clearRecordingNotification();
+    this.awaitingMicGrant = false;
+    this.pendingStartAfterMic = false;
     this.postToBackground({ type: "stopRecording" });
     this.stopTimer();
     this.saveTextDraft();
     this.updateUIStatus("idle", this.pack.statusStopped);
   }
 
-  insertTextToActiveField() {
+  async insertTextToActiveField() {
     const textToInsert = this.output.value;
     if (!textToInsert.trim()) {
       this.showTransientStatus(this.pack.toastNoText);
       return;
     }
 
+    await this.ensureWindowId();
+
+    const pasteMessage = (response) => {
+      if (response?.success) return this.pack.toastPasteOk || this.pack.toastPasted;
+      const reason = response?.reason;
+      if (reason === "no-tab") return this.pack.toastNoTab;
+      if (reason === "restricted") return this.pack.toastPasteRestricted;
+      if (reason === "pdf") return this.pack.toastPastePdf;
+      if (reason === "file") return this.pack.toastPasteFile;
+      if (reason === "no-field") return this.pack.toastPasteNoField;
+      return this.pack.toastPasteFail;
+    };
+
     const handlePasteResponse = (response) => {
+      const message = pasteMessage(response);
       if (response?.success) {
-        this.showTransientStatus(
-          this.pack.toastPasteOk || this.pack.toastPasted,
-        );
+        this.showTransientStatus(message);
       } else {
-        this.showTransientStatus(this.pack.toastPasteFail, 2500, true);
+        this.showTransientStatus(message, 2500, true);
       }
     };
 
@@ -551,6 +672,7 @@ class SpeechToTextPro {
       this.safeRuntimeSend({
         action: "pasteToActiveTab",
         textToPaste: textToInsert,
+        windowId: this.windowId,
       });
 
     requestPaste().then(async (response) => {
@@ -558,14 +680,12 @@ class SpeechToTextPro {
         this.showTransientStatus(this.pack.toastPasteFail, 2500, true);
         return;
       }
-      if (
-        response?.needsHostAccess &&
-        response.originPattern &&
-        chrome.permissions?.request
-      ) {
-        const granted = await chrome.permissions.request({
-          origins: [response.originPattern],
-        });
+      if (response.needsHostAccess && chrome.permissions?.request) {
+        const origins =
+          Array.isArray(response.origins) && response.origins.length
+            ? response.origins
+            : ["https://*/*", "http://*/*"];
+        const granted = await chrome.permissions.request({ origins });
         if (granted) {
           return requestPaste().then(handlePasteResponse);
         }
@@ -618,7 +738,7 @@ class SpeechToTextPro {
         formatted += ".";
       } else if (this.autoPunctuationLevel === "high") {
         const lower = formatted.toLowerCase();
-        if (lower.match(this.pack.punctQuestionRe)) {
+        if (this.matchesAtStart(lower, this.pack.punctQuestionRe)) {
           formatted += "?";
         } else if (lower.match(this.pack.punctExclaimRe)) {
           formatted += "!";
@@ -629,6 +749,16 @@ class SpeechToTextPro {
     }
 
     return formatted + " ";
+  }
+
+  matchesAtStart(text, re) {
+    if (!re || !text) return false;
+    const flags = String(re.flags || "").replace("g", "");
+    const anchored = new RegExp(
+      "^\\s*(?:[«\"'“„¿¡(]*)(?:" + re.source + ")",
+      flags,
+    );
+    return anchored.test(text);
   }
 
   /**
@@ -711,7 +841,7 @@ class SpeechToTextPro {
       this.status.textContent = message || p.statusPreparing;
       if (startLabel) startLabel.textContent = p.btnStart;
       this.startBtn.classList.add("hidden");
-      this.pauseBtn.classList.remove("hidden");
+      this.pauseBtn.classList.add("hidden");
       this.stopBtn.classList.remove("hidden");
     }
   }
@@ -756,25 +886,36 @@ class SpeechToTextPro {
   }
 
   clearText() {
+    if (!this.output.value) return;
+    const question = this.pack.clearConfirm || "Clear the entire draft?";
+    if (!window.confirm(question)) return;
     this.output.value = "";
     this.finalTranscript = "";
     this.interimTranscript = "";
     this.sessionWordCount = 0;
     this.updateStats();
     this.updateEditorOverlay();
-    chrome.storage.local.set({ textDraft: "" });
+    chrome.storage.local.set({ textDraft: "", textDraftSavedAt: Date.now() });
     this.showTransientStatus(this.pack.toastCleared);
   }
 
   closeSidePanel() {
-    if (this.isRecording) {
+    if (this.isRecording || this.isPaused) {
       this.stopRecording();
     }
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
     }
     clearTimeout(this._transientStatusTimer);
-    this.saveTextDraft();
+    if (this.draftRetention === "on-close") {
+      this.output.value = "";
+      this.finalTranscript = "";
+      this.interimTranscript = "";
+      chrome.storage.local.set({ textDraft: "", textDraftSavedAt: Date.now() });
+    } else {
+      this.flushTextDraft();
+    }
     this.safeRuntimeSend({ action: "closeSidePanel" });
     window.close();
   }
@@ -789,50 +930,21 @@ class SpeechToTextPro {
   }
 
   updateEditorOverlay() {
-    if (this.output.value.length > 0) {
-      this.editorOverlay.style.opacity = "0";
-      this.editorOverlay.style.pointerEvents = "none";
-    } else {
-      this.editorOverlay.style.opacity = "1";
-      this.editorOverlay.style.pointerEvents = "auto";
-    }
+    if (!this.editorOverlay) return;
+    this.editorOverlay.style.pointerEvents = "none";
+    this.editorOverlay.style.opacity = this.output.value.length > 0 ? "0" : "1";
   }
 
   setupSpellCheck() {
     this.output.setAttribute("spellcheck", "true");
-    this.output.setAttribute("lang", this.languageSelect.value.split("-")[0]);
-  }
-
-  clearRecordingNotification() {
-    this.safeRuntimeSend({ type: "recordingStopped" });
+    const code = this.languageSelect?.value || this.currentLanguage || "en";
+    this.output.setAttribute("lang", String(code).split("-")[0]);
   }
 
   handleGlobalKeyboardShortcuts(e) {
     if (e.repeat) return;
-
     const mod = e.ctrlKey || e.metaKey;
-
-    if (mod && e.code === "KeyC" && document.activeElement === this.output) {
-      this.copyToClipboard();
-      e.preventDefault();
-    }
-
-    if (mod && e.code === "Delete") {
-      this.clearText();
-      e.preventDefault();
-    }
-
-    if (mod && e.shiftKey && e.code === "Digit1") {
-      this.startRecording();
-      e.preventDefault();
-    }
-
-    if (mod && e.shiftKey && e.code === "Digit2") {
-      this.stopRecording();
-      e.preventDefault();
-    }
-
-    if (mod && e.shiftKey && e.code === "KeyI") {
+    if (mod && e.shiftKey && e.code === "Enter") {
       this.insertTextToActiveField();
       e.preventDefault();
     }
@@ -841,10 +953,24 @@ class SpeechToTextPro {
   saveSettings() {
     const settings = {
       language: this.languageSelect.value,
+      uiLanguage: this.uiLanguageSelect?.value || this.uiLanguage,
       autoPunctuation: this.autoPunctuationSelect.value,
+      draftRetention: this.draftRetentionSelect?.value || this.draftRetention,
       textDraft: this.output.value,
+      textDraftSavedAt: Date.now(),
     };
     chrome.storage.local.set(settings);
+  }
+
+  flushTextDraft() {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    chrome.storage.local.set({
+      textDraft: this.output.value,
+      textDraftSavedAt: Date.now(),
+    });
   }
 
   saveTextDraft() {
@@ -852,17 +978,40 @@ class SpeechToTextPro {
       clearTimeout(this.saveTimeout);
     }
     this.saveTimeout = setTimeout(() => {
-      chrome.storage.local.set({ textDraft: this.output.value });
+      this.flushTextDraft();
     }, 1000);
   }
 
+  defaultLocale() {
+    const ui = chrome.i18n?.getUILanguage?.() || navigator.language || "en-US";
+    if (globalThis.AppI18n?.normalizeLocale) {
+      return globalThis.AppI18n.normalizeLocale(ui);
+    }
+    return "en-US";
+  }
+
   loadSavedSettings() {
+    const fallback = this.defaultLocale();
     chrome.storage.local.get(
-      ["language", "autoPunctuation", "textDraft", "privacyConsentAccepted"],
+      [
+        "language",
+        "uiLanguage",
+        "autoPunctuation",
+        "textDraft",
+        "textDraftSavedAt",
+        "draftRetention",
+        "privacyConsentAccepted",
+      ],
       (result) => {
-        if (result.language) {
-          this.languageSelect.value = result.language;
-          this.currentLanguage = result.language;
+        const recognition = result.language || fallback;
+        const ui = result.uiLanguage || fallback;
+        if (this.languageSelect) {
+          this.languageSelect.value = recognition;
+          this.currentLanguage = recognition;
+        }
+        if (this.uiLanguageSelect) {
+          this.uiLanguageSelect.value = ui;
+          this.uiLanguage = ui;
         }
         if (
           result.autoPunctuation !== undefined &&
@@ -871,7 +1020,22 @@ class SpeechToTextPro {
           this.autoPunctuationSelect.value = result.autoPunctuation;
           this.autoPunctuationLevel = result.autoPunctuation;
         }
-        if (result.textDraft) {
+        if (this.draftRetentionSelect) {
+          const retention = result.draftRetention || "keep";
+          this.draftRetentionSelect.value = retention;
+          this.draftRetention = retention;
+        }
+        const draftAgeMs = Date.now() - (result.textDraftSavedAt || 0);
+        const draftExpired =
+          result.draftRetention === "7d" &&
+          result.textDraftSavedAt &&
+          draftAgeMs > 7 * 24 * 60 * 60 * 1000;
+        if (draftExpired) {
+          chrome.storage.local.set({ textDraft: "", textDraftSavedAt: Date.now() });
+        } else if (result.textDraft) {
+          if (!result.textDraftSavedAt) {
+            chrome.storage.local.set({ textDraftSavedAt: Date.now() });
+          }
           this.output.value = result.textDraft;
           this.finalTranscript = result.textDraft;
           this.interimTranscript = "";
@@ -887,6 +1051,7 @@ class SpeechToTextPro {
         }
 
         this.applyAppLocale();
+        this.setupSpellCheck();
       },
     );
   }
@@ -904,33 +1069,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request.action === "startRecording") {
-    sttAppInstance.startRecording();
-    sendResponse({ success: true });
-  } else if (request.action === "stopRecording") {
-    sttAppInstance.stopRecording();
-    sendResponse({ success: true });
-  } else if (request.action === "updateTranscript") {
-    if (sttAppInstance.output) {
-      sttAppInstance.finalTranscript = request.final || "";
-      sttAppInstance.interimTranscript = request.interim || "";
-      sttAppInstance.output.value =
-        sttAppInstance.finalTranscript + sttAppInstance.interimTranscript;
-      sttAppInstance.output.scrollTop = sttAppInstance.output.scrollHeight;
-      sttAppInstance.updateStats();
-      sttAppInstance.updateEditorOverlay();
-      sttAppInstance.saveTextDraft();
-    }
-    sendResponse({ success: true });
-  } else if (request.action === "recognitionError") {
-    sttAppInstance.isRecording = false;
-    sttAppInstance.isPaused = false;
-    sttAppInstance.updateUIStatus(
-      "error",
-      `${sttAppInstance.pack.recognitionErrPrefix} ${request.error}`,
-    );
-    sendResponse({ success: true });
-  } else if (request.action === "pasteCompleted") {
+  if (request.action === "pasteCompleted") {
     if (request.success) {
       sttAppInstance.showTransientStatus(sttAppInstance.pack.toastPasteOk);
     } else {

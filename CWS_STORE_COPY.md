@@ -18,9 +18,7 @@ In `store/screenshots/` (not inside the ZIP):
 
 1. `01-privacy-consent-1280x800.png` — consent gate (recording blocked until Accept).
 2. `02-panel-ready-1280x800.png` — panel after consent, footer `v3.4.1`.
-3. `03-consent-panel-380x800.png` — panel-only consent crop.
-
-Upload at least (1) or (2) to the store listing.
+3. Do not upload `03-consent-panel-380x800.png` or `03-consent-panel-400x800.png`. Chrome Web Store wants 1280×800 or 640×400.
 
 ## If asked about Google / audio
 
@@ -30,7 +28,7 @@ Use this (same as the live policy):
 
 ## Single purpose statement
 
-Convert speech to text in the Chrome Side Panel and insert the resulting draft into a page field chosen by the user.
+Convert speech to text and insert the resulting draft into a page field chosen by the user. Controls and the draft are in the Chrome side panel. Recognition runs in an extension recorder tab because the side panel cannot use the microphone reliably.
 
 ## Permission justifications
 
@@ -42,11 +40,11 @@ Used only when the user invokes the extension (side-panel Insert, keyboard comma
 
 Inject paste helper only after an explicit user gesture (Insert or context-menu paste).
 
-Longer form (if the form allows detail): injects `i18n.js` and `content.js` into that tab only when they are not already present, so the draft can be pasted into the focused editable field. No permanent `content_scripts`; no background inject without a gesture.
+Longer form (if the form allows detail): injects `content.js` into the tab after the gesture, including frames the extension can access, so the draft can be pasted into the focused editable field. No permanent `content_scripts`. If the tab URL is hidden, the panel asks for optional http/https access instead of guessing an origin.
 
 ### storage
 
-Stores recognition language, punctuation level, text draft, and privacy-consent flag in `chrome.storage.local` on the device.
+Stores recognition language, interface language, punctuation level, draft retention, text draft, and privacy-consent flag in `chrome.storage.local` on the device. The user can keep the draft, clear it when the panel closes, or clear it after 7 days.
 
 ### sidePanel
 
@@ -56,13 +54,11 @@ Provides the primary UI for recording, editing, and settings.
 
 Adds a context-menu item on editable fields to paste the saved draft.
 
-### notifications
-
-Shows an optional “recording started” notification when recognition begins in the side panel.
-
 ### optional_host_permissions (`http://*/*`, `https://*/*`) — KEEP
 
-**Decision:** keep in the manifest. Code calls `chrome.permissions.request({ origins: [originPattern] })` in `background.js` (context-menu paste) and `sidepanel.js` (Insert when inject needs host access). Not granted at install; user approves per origin. Do not remove while those call sites exist.
+**Decision:** keep in the manifest. Not granted at install. Context-menu paste calls `chrome.permissions.request` from the service worker when an origin is known. Insert, which runs from the side panel, requests either that origin or both `http://*/*` and `https://*/*` when `tab.url` is missing. Do not remove while those call sites exist.
+
+There is no `notifications` permission. Recording state is shown in the side panel and the recorder tab.
 
 ## Remote code
 

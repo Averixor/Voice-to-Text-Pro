@@ -16,10 +16,10 @@ test("manifest permissions are minimal and optional hosts are declared", () => {
     fs.readFileSync(path.join(root, "manifest.json"), "utf8"),
   );
   assert.equal(manifest.version, "3.4.1");
+  assert.equal(manifest.minimum_chrome_version, "116");
   assert.deepEqual([...manifest.permissions].sort(), [
     "activeTab",
     "contextMenus",
-    "notifications",
     "scripting",
     "sidePanel",
     "storage",
@@ -39,6 +39,9 @@ test("optional_host_permissions is used via chrome.permissions.request", () => {
   assert.match(panel, /chrome\.permissions\.request\s*\(/);
   assert.match(bg, /needsHostAccess/);
   assert.match(bg, /originPattern/);
+  assert.match(bg, /https:\/\/\*\/\*/);
+  assert.match(bg, /allFrames:\s*true/);
+  assert.doesNotMatch(bg, /"i18n\.js"/);
 });
 
 test("paste helper ignores password, date, number and accepts text", () => {
@@ -80,7 +83,7 @@ test("paste helper ignores password, date, number and accepts text", () => {
 
 test("copy path prefers Clipboard API", () => {
   const src = fs.readFileSync(path.join(root, "sidepanel.js"), "utf8");
-  assert.match(src, /navigator\.clipboard\.writeText/);
+  assert.match(src, /navigator\.clipboard\?\.writeText/);
   assert.match(src, /copyToClipboard\s*\(/);
 });
 
@@ -93,8 +96,21 @@ test("privacy consent gate exists", () => {
   assert.ok(fs.existsSync(path.join(root, "privacy.html")));
 });
 
-test("panel-only STT: no startRecordingInTab", () => {
+test("speech recognition runs in the recorder tab", () => {
   const bg = fs.readFileSync(path.join(root, "background.js"), "utf8");
+  const panel = fs.readFileSync(path.join(root, "sidepanel.js"), "utf8");
+  const content = fs.readFileSync(path.join(root, "content.js"), "utf8");
   assert.doesNotMatch(bg, /function startRecordingInTab/);
-  assert.match(bg, /openSidePanelForTab/);
+  assert.match(bg, /recorder\.html/);
+  assert.match(bg, /chrome\.storage\.session/);
+  assert.match(bg, /PANEL_GONE_MS/);
+  assert.match(panel, /applyRecorderChunks/);
+  assert.doesNotMatch(panel, /action === "updateTranscript"/);
+  assert.doesNotMatch(panel, /notifications/);
+  const start = content.indexOf("insertIntoContentEditable(target, textToPaste)");
+  const end = content.indexOf("pasteText(textToPaste)", start);
+  const insertFn = content.slice(start, end);
+  assert.ok(insertFn.indexOf("execCommand") < insertFn.indexOf("createTextNode"));
+  const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
+  assert.match(css, /\.editor-overlay[\s\S]*pointer-events:\s*none/);
 });

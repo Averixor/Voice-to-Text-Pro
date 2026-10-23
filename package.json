@@ -1,0 +1,9 @@
+{
+  "name": "voice-to-text-pro",
+  "version": "3.4.1",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/p1-regressions.test.js tests/cws-verify.mjs",
+    "pack": "node scripts/pack-extension.mjs"
+  }
+}

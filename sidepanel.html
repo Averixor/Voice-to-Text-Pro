@@ -31,7 +31,7 @@
             <div class="logo-icon">🎤</div>
             <div class="logo-text">
               <h1>Voice to Text Pro</h1>
-              <span class="tagline">AI punctuation • Spell check</span>
+              <span class="tagline">Smart punctuation • Spell check</span>
             </div>
           </div>
           <button
@@ -236,7 +236,7 @@
               type="button"
               class="control-btn danger-btn"
               id="clearBtn"
-              title="Clear text (Ctrl+Del)"
+              title="Clear text"
             >
               <svg
                 width="20"
@@ -275,12 +275,35 @@
             </select>
           </div>
           <div class="config-item">
-            <label for="autoPunctuation">AI punctuation:</label>
+            <label for="uiLanguage">Interface language:</label>
+            <select id="uiLanguage">
+              <option value="ru-RU">Russian</option>
+              <option value="en-US">English (US)</option>
+              <option value="uk-UA">Ukrainian</option>
+              <option value="es-ES">Spanish</option>
+              <option value="fr-FR">French</option>
+              <option value="de-DE">German</option>
+              <option value="it-IT">Italian</option>
+              <option value="ja-JP">Japanese</option>
+              <option value="ko-KR">Korean</option>
+              <option value="zh-CN">Chinese</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label for="autoPunctuation">Smart punctuation:</label>
             <select id="autoPunctuation">
               <option value="off">Off</option>
               <option value="low">Low (periods only)</option>
-              <option value="medium">Medium (commas, periods)</option>
+              <option value="medium" selected>Medium (commas, periods)</option>
               <option value="high">High (questions, exclamations)</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label for="draftRetention">Draft storage:</label>
+            <select id="draftRetention">
+              <option value="keep">Keep until I clear</option>
+              <option value="on-close">Clear when the panel closes</option>
+              <option value="7d">Clear after 7 days</option>
             </select>
           </div>
         </section>

@@ -74,7 +74,7 @@ test("side panel keeps manual edits when an interim result becomes final", () =>
   app.updateStats = () => {};
 
   app.syncTranscriptFromOutput();
-  app.handleRecognitionResult(recognitionEvent("live words", true));
+  app.applyRecorderChunks([{ transcript: "live words", isFinal: true }]);
 
   assert.equal(app.finalTranscript, "Edited live words ");
   assert.equal(app.output.value, "Edited live words ");
@@ -109,25 +109,20 @@ test("side panel separates new speech from a manually edited draft", () => {
   app.updateStats = () => {};
 
   app.syncTranscriptFromOutput();
-  app.handleRecognitionResult(recognitionEvent("new speech", false));
+  app.applyRecorderChunks([{ transcript: "new speech", isFinal: false }]);
 
   assert.equal(app.finalTranscript, "Manual correction ");
   assert.equal(app.output.value, "Manual correction new speech");
 });
 
-test("fallback updates synchronize side panel state and draft", () => {
-  let messageListener;
+test("high punctuation marks a question only when it starts the phrase", () => {
   const context = loadScript("sidepanel.js", {
     chrome: {
       runtime: {
         connect() {
           return { name: "sidePanel" };
         },
-        onMessage: {
-          addListener(listener) {
-            messageListener = listener;
-          },
-        },
+        onMessage: { addListener() {} },
       },
     },
     document: {
@@ -135,37 +130,27 @@ test("fallback updates synchronize side panel state and draft", () => {
     },
     window: {},
   });
-  let saveCount = 0;
-  const app = {
-    output: {
-      scrollHeight: 24,
-      scrollTop: 0,
-      value: "",
-    },
-    saveTextDraft() {
-      saveCount += 1;
-    },
-    updateEditorOverlay() {},
-    updateStats() {},
+  const SpeechToTextPro = vm.runInContext("SpeechToTextPro", context);
+  const app = Object.create(SpeechToTextPro.prototype);
+  app.autoPunctuationLevel = "high";
+  app.finalTranscript = "";
+  app.pack = {
+    punctQuestionRe: /\b(what|how)\b/i,
+    punctExclaimRe: /$^/,
   };
-  context.testApp = app;
-  vm.runInContext("sttAppInstance = testApp", context);
 
-  messageListener(
-    {
-      action: "updateTranscript",
-      final: "Durable ",
-      interim: "fallback",
-    },
-    {},
-    () => {},
+  assert.equal(app.formatText("what time is it"), "What time is it? ");
+  app.finalTranscript = "";
+  assert.equal(
+    app.formatText("tell me what time it is"),
+    "Tell me what time it is. ",
   );
 
-  assert.equal(app.finalTranscript, "Durable ");
-  assert.equal(app.interimTranscript, "fallback");
-  assert.equal(app.output.value, "Durable fallback");
-  assert.equal(app.output.scrollTop, 24);
-  assert.equal(saveCount, 1);
+  const src = fs.readFileSync(path.join(projectRoot, "sidepanel.js"), "utf8");
+  assert.doesNotMatch(src, /action === "updateTranscript"/);
+  assert.doesNotMatch(src, /action === "recognitionError"/);
+  assert.doesNotMatch(src, /e\.code === "Delete"/);
+  assert.doesNotMatch(src, /e\.code === "KeyI"/);
 });
 
 test("content paste helper rejects password fields", () => {
@@ -222,25 +207,9 @@ test("background has no tab STT fallback helper", () => {
         removeAll() {},
         update() {},
       },
-      notifications: {
-        clear() {
-          return Promise.resolve(true);
-        },
-        create() {
-          return Promise.resolve("voice-to-text-pro-recording");
-        },
-        onButtonClicked: { addListener() {} },
-        onClicked: { addListener() {} },
-      },
-      tabs: {
-        query() {
-          return Promise.resolve([]);
-        },
-      },
-      permissions: { request() {} },
       runtime: {
-        getURL(path) {
-          return `chrome-extension://test/${path}`;
+        getURL(file) {
+          return `chrome-extension://test/${file}`;
         },
         onConnect: { addListener() {} },
         onInstalled: { addListener() {} },
@@ -273,13 +242,32 @@ test("background has no tab STT fallback helper", () => {
           remove() {},
           set() {},
         },
+        session: {
+          get() {
+            return Promise.resolve({});
+          },
+          set() {
+            return Promise.resolve();
+          },
+        },
         onChanged: { addListener() {} },
       },
+      i18n: {
+        getUILanguage() {
+          return "en-US";
+        },
+      },
       tabs: {
-        query() {},
+        query() {
+          return Promise.resolve([]);
+        },
+        get() {
+          return Promise.resolve({ id: 1 });
+        },
         sendMessage() {
           return Promise.resolve({ success: true });
         },
+        onRemoved: { addListener() {} },
       },
       windows: {
         create() {

@@ -24,43 +24,60 @@
   </head>
   <body>
     <h1>Privacy Policy — Voice to Text Pro</h1>
-    <p>Last updated: 2026-10-23</p>
+    <p>Last updated: 2026-10-24</p>
 
     <h2>What this extension does</h2>
     <p>
-      Voice to Text Pro is a Chrome extension that converts speech to text in
-      the Chrome Side Panel, applies optional punctuation helpers, and can
-      insert the draft into a page field you choose.
+      Voice to Text Pro converts speech to text. The controls and the draft
+      live in the Chrome side panel. Speech recognition itself runs in a
+      recorder tab that the extension opens beside your page, because the side
+      panel cannot reliably use the microphone. Optional punctuation helpers
+      run locally in the panel. You can insert the draft into a page field you
+      choose.
     </p>
 
     <h2>Speech recognition (Google Web Speech)</h2>
     <p>
       Recognition uses the browser Web Speech API
-      (<code>SpeechRecognition</code> / <code>webkitSpeechRecognition</code>).
-      In desktop Google Chrome this typically sends audio to Google’s speech
-      recognition servers over the internet. An active network connection is
-      required for recognition. The extension does not run a separate speech
-      model on your device.
+      (<code>SpeechRecognition</code> / <code>webkitSpeechRecognition</code>)
+      inside the recorder tab. In desktop Google Chrome this typically sends
+      audio to Google’s speech recognition servers over the internet. An active
+      network connection is required for recognition. The extension does not
+      run a separate speech model on your device. Closing the side panel stops
+      recognition and closes the recorder tab after a short delay.
+    </p>
+
+    <h2>Microphone</h2>
+    <p>
+      The recorder tab asks Chrome for microphone access. That permission
+      belongs to the extension, not to the website you are dictating into. The
+      extension does not show a desktop notification when recording starts.
     </p>
 
     <h2>Local storage</h2>
     <p>
       The extension stores settings and the text draft in
-      <code>chrome.storage.local</code> on your device:
-      recognition language (<code>language</code>), punctuation level
-      (<code>autoPunctuation</code>), draft text (<code>textDraft</code>), and
-      the privacy consent flag (<code>privacyConsentAccepted</code>, set to
-      <code>true</code> when the user accepts the in-panel notice before
-      recording). This data is not uploaded by the extension to a first-party
-      server.
+      <code>chrome.storage.local</code> on your device: recognition language
+      (<code>language</code>), interface language (<code>uiLanguage</code>),
+      punctuation level (<code>autoPunctuation</code>), draft retention
+      (<code>draftRetention</code>: keep, clear when the panel closes, or clear
+      after 7 days), draft text (<code>textDraft</code>), when the draft was
+      last saved (<code>textDraftSavedAt</code>), and the privacy consent flag
+      (<code>privacyConsentAccepted</code>). Recorder tab ids needed while a
+      dictation is in progress are kept in <code>chrome.storage.session</code>
+      and disappear when the browser session ends. This data is not uploaded
+      by the extension to a first-party server.
     </p>
 
     <h2>Page access</h2>
     <p>
       The extension does not permanently inject scripts into every website. It
-      injects helper scripts only after you take an explicit action (Insert in
-      the side panel or the context-menu paste item), and may ask for optional
-      host access for that site when needed to complete paste.
+      injects <code>content.js</code> only after you take an explicit action
+      (Insert in the side panel or the context-menu paste item), including
+      frames and open shadow roots when it can reach them. If the active tab
+      URL is not visible to the extension, Insert asks you to grant optional
+      access for <code>http</code> and <code>https</code> pages. Password
+      fields and non-text inputs are not paste targets.
     </p>
 
     <h2>Permissions</h2>
@@ -69,9 +86,19 @@
       <li><strong>storage</strong> — settings and draft</li>
       <li><strong>sidePanel</strong> — main UI</li>
       <li><strong>contextMenus</strong> — paste menu item</li>
-      <li><strong>notifications</strong> — optional recording-started notice</li>
-      <li><strong>optional host permissions</strong> — granted per site when paste needs them</li>
+      <li>
+        <strong>optional host permissions</strong> (<code>http://*/*</code>,
+        <code>https://*/*</code>) — granted only when paste needs them
+      </li>
     </ul>
+
+    <h2>Smart punctuation</h2>
+    <p>
+      “Smart punctuation” is a local text helper. It is not a generative AI
+      service. It capitalizes the start of a phrase and can add a period,
+      question mark, or exclamation mark from fixed rules in the extension.
+      Spell check is the browser’s built-in checker.
+    </p>
 
     <h2>Chrome Web Store listing</h2>
     <p>

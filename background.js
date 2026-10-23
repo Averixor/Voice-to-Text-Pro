@@ -1,6 +1,6 @@
 // ===========================================
 // background.js - service worker
-// Commands, side panel + recorder ports, context menu, notifications, paste inject.
+// Commands, side panel + recorder ports, context menu, paste inject.
 // ===========================================
 
 const CONTEXT_MENU_I18N = {
@@ -16,63 +16,28 @@ const CONTEXT_MENU_I18N = {
   "zh-CN": "从语音转文本 Pro 插入文本",
 };
 
-const RECORDING_NOTIFICATION_ID = "voice-to-text-pro-recording";
+const SUPPORTED_LOCALES = [
+  "ru-RU",
+  "uk-UA",
+  "en-US",
+  "es-ES",
+  "fr-FR",
+  "de-DE",
+  "it-IT",
+  "ja-JP",
+  "ko-KR",
+  "zh-CN",
+];
 
-const RECORDING_STARTED_NOTIFY = {
-  "ru-RU": {
-    title: "Голос в Текст Pro",
-    message: "Запись голоса начата. Говорите сейчас.",
-    openPanel: "Открыть панель",
-  },
-  "uk-UA": {
-    title: "Голос у Текст Pro",
-    message: "Запис розпочато. Говоріть.",
-    openPanel: "Відкрити панель",
-  },
-  "en-US": {
-    title: "Voice to Text Pro",
-    message: "Recording started. Speak now.",
-    openPanel: "Open panel",
-  },
-  "es-ES": {
-    title: "Voz a Texto Pro",
-    message: "Grabación iniciada. Hable ahora.",
-    openPanel: "Abrir panel",
-  },
-  "fr-FR": {
-    title: "Voix en Texte Pro",
-    message: "Enregistrement démarré. Parlez maintenant.",
-    openPanel: "Ouvrir le panneau",
-  },
-  "de-DE": {
-    title: "Sprache zu Text Pro",
-    message: "Aufnahme gestartet. Sprechen Sie jetzt.",
-    openPanel: "Panel öffnen",
-  },
-  "it-IT": {
-    title: "Voce in Testo Pro",
-    message: "Registrazione avviata. Parla ora.",
-    openPanel: "Apri pannello",
-  },
-  "ja-JP": {
-    title: "音声テキスト変換 Pro",
-    message: "録音を開始しました。話してください。",
-    openPanel: "パネルを開く",
-  },
-  "ko-KR": {
-    title: "음성을 텍스트로 Pro",
-    message: "녹음이 시작되었습니다. 말하세요.",
-    openPanel: "패널 열기",
-  },
-  "zh-CN": {
-    title: "语音转文本 Pro",
-    message: "已开始录音，请说话。",
-    openPanel: "打开面板",
-  },
-};
+const SESSION_KEY = "recorderSession";
+const PANEL_GONE_MS = 4000;
+const BROAD_HOST_ORIGINS = ["https://*/*", "http://*/*"];
 
 /** @type {Set<chrome.runtime.Port>} */
 const sidePanelPorts = new Set();
+
+/** @type {Map<chrome.runtime.Port, number|null>} */
+const panelWindowByPort = new Map();
 
 /** @type {chrome.runtime.Port|null} */
 let recorderPort = null;
@@ -87,8 +52,21 @@ let recorderReturnTabId = null;
 /** @type {{ type: string, language?: string }|null} */
 let pendingRecorderCommand = null;
 
-function notifyStringsForLanguage(code) {
-  return RECORDING_STARTED_NOTIFY[code] || RECORDING_STARTED_NOTIFY["en-US"];
+/** Window whose panel owns the current dictation. */
+/** @type {number|null} */
+let dictationWindowId = null;
+
+/** @type {ReturnType<typeof setTimeout>|null} */
+let panelGoneTimer = null;
+
+function defaultLocale() {
+  const ui = chrome.i18n?.getUILanguage?.() || "en-US";
+  if (SUPPORTED_LOCALES.includes(ui)) return ui;
+  const base = String(ui).split("-")[0].toLowerCase();
+  return (
+    SUPPORTED_LOCALES.find((code) => code.toLowerCase().startsWith(base)) ||
+    "en-US"
+  );
 }
 
 function contextMenuTitleForLanguage(code) {
@@ -96,7 +74,7 @@ function contextMenuTitleForLanguage(code) {
 }
 
 function createOrRefreshContextMenu(languageCode) {
-  const title = contextMenuTitleForLanguage(languageCode || "ru-RU");
+  const title = contextMenuTitleForLanguage(languageCode || defaultLocale());
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: "pasteTranscript",
@@ -115,61 +93,198 @@ function originFromTabUrl(url) {
   }
 }
 
-function injectContentScripts(tabId) {
-  return chrome.scripting.executeScript({
-    target: { tabId },
-    files: ["i18n.js", "content.js"],
-  });
+function tabAccessKind(url) {
+  if (!url) return "unknown";
+  if (/^file:/i.test(url)) return "file";
+  if (/\.pdf(?:$|[?#])/i.test(url)) return "pdf";
+  if (
+    /^(chrome|chrome-untrusted|edge|about|devtools|view-source|chrome-extension):/i.test(
+      url,
+    )
+  ) {
+    return "restricted";
+  }
+  if (/^https?:/i.test(url)) return "web";
+  return "restricted";
 }
 
-function deliverPaste(tabId, textToPaste) {
-  const payload = {
-    action: "pasteSelection",
-    textToPaste,
-  };
-  return chrome.tabs.sendMessage(tabId, payload);
+function hostOriginsFor(url) {
+  const originPattern = originFromTabUrl(url);
+  return originPattern ? [originPattern] : BROAD_HOST_ORIGINS.slice();
+}
+
+function persistRecorderSession() {
+  if (!chrome.storage?.session) return;
+  chrome.storage.session
+    .set({
+      [SESSION_KEY]: {
+        recorderTabId,
+        recorderReturnTabId,
+        pendingRecorderCommand,
+        dictationWindowId,
+      },
+    })
+    .catch(() => {});
+}
+
+function clearRecorderTabState() {
+  recorderTabId = null;
+  recorderReturnTabId = null;
+  recorderPort = null;
+  pendingRecorderCommand = null;
+  persistRecorderSession();
+}
+
+function restoreRecorderSession() {
+  if (!chrome.storage?.session) return;
+  chrome.storage.session
+    .get(SESSION_KEY)
+    .then((stored) => {
+      const session = stored?.[SESSION_KEY];
+      if (!session) return;
+      recorderTabId = Number.isInteger(session.recorderTabId)
+        ? session.recorderTabId
+        : null;
+      recorderReturnTabId = Number.isInteger(session.recorderReturnTabId)
+        ? session.recorderReturnTabId
+        : null;
+      pendingRecorderCommand = session.pendingRecorderCommand || null;
+      dictationWindowId = Number.isInteger(session.dictationWindowId)
+        ? session.dictationWindowId
+        : null;
+      if (recorderTabId == null) return;
+      chrome.tabs
+        .get(recorderTabId)
+        .then(() => {
+          scheduleStopWhenPanelGone();
+        })
+        .catch(() => {
+          clearRecorderTabState();
+        });
+    })
+    .catch(() => {});
+}
+
+async function injectPasteHelper(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      files: ["content.js"],
+    });
+    return true;
+  } catch (allFramesError) {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content.js"],
+    });
+    return false;
+  }
+}
+
+async function pasteInTab(tabId, textToPaste) {
+  const allFrames = await injectPasteHelper(tabId);
+  const target = { tabId };
+  if (allFrames) target.allFrames = true;
+
+  const probe = await chrome.scripting.executeScript({
+    target,
+    func: () => {
+      const helper = globalThis.__voiceToTextProContentInstance;
+      if (!helper || typeof helper.getPasteTarget !== "function") {
+        return { hasTarget: false };
+      }
+      const deep =
+        typeof helper.deepActiveElement === "function"
+          ? helper.deepActiveElement(document.activeElement)
+          : document.activeElement;
+      const found = helper.getPasteTarget();
+      return {
+        hasTarget: Boolean(found),
+        focused: document.hasFocus(),
+        activeIsTarget: Boolean(
+          found && (deep === found || document.activeElement === found),
+        ),
+      };
+    },
+  });
+
+  const frames = probe || [];
+  const chosen =
+    frames.find((frame) => frame.result?.activeIsTarget) ||
+    frames.find((frame) => frame.result?.focused && frame.result?.hasTarget) ||
+    frames.find((frame) => frame.result?.hasTarget);
+
+  if (!chosen || chosen.frameId == null) {
+    return { success: false, reason: "no-field" };
+  }
+
+  const pasted = await chrome.scripting.executeScript({
+    target: { tabId, frameIds: [chosen.frameId] },
+    func: (text) => {
+      const helper = globalThis.__voiceToTextProContentInstance;
+      if (!helper || typeof helper.pasteText !== "function") {
+        return { success: false, reason: "no-helper" };
+      }
+      const ok = helper.pasteText(text);
+      return { success: Boolean(ok), reason: ok ? "ok" : "no-field" };
+    },
+    args: [textToPaste],
+  });
+
+  const result = pasted?.[0]?.result;
+  if (result?.success) return { success: true, reason: "ok" };
+  return { success: false, reason: result?.reason || "no-field" };
 }
 
 /**
- * Paste after a user gesture: message → inject → optional host grant → retry.
+ * Paste after a user gesture: inject all frames → optional host grant → retry.
+ * When the tab URL is hidden, the caller asks for all http and https origins.
  * @param {number} tabId
  * @param {string} textToPaste
  * @param {{ requestPermission?: boolean, tabUrl?: string }} [options]
  */
 async function sendPasteToTab(tabId, textToPaste, options = {}) {
   const requestPermission = options.requestPermission !== false;
-  const tabUrl = options.tabUrl;
+  const tabUrl = options.tabUrl || "";
+  const kind = tabAccessKind(tabUrl);
+
+  if (kind === "restricted") return { success: false, reason: "restricted" };
+  if (kind === "file") return { success: false, reason: "file" };
+  if (kind === "pdf") return { success: false, reason: "pdf" };
 
   try {
-    const response = await deliverPaste(tabId, textToPaste);
-    return { success: Boolean(response?.success) };
-  } catch {
-    // No receiver yet — inject, then retry.
-  }
-
-  try {
-    await injectContentScripts(tabId);
-    const response = await deliverPaste(tabId, textToPaste);
-    return { success: Boolean(response?.success) };
+    return await pasteInTab(tabId, textToPaste);
   } catch (injectError) {
-    const originPattern = originFromTabUrl(tabUrl);
-    if (requestPermission && originPattern && chrome.permissions?.request) {
-      const granted = await chrome.permissions.request({
-        origins: [originPattern],
-      });
+    const origins = hostOriginsFor(tabUrl);
+    const originPattern = origins.length === 1 ? origins[0] : undefined;
+    if (requestPermission && chrome.permissions?.request) {
+      const granted = await chrome.permissions.request({ origins });
       if (!granted) {
-        return { success: false, needsHostAccess: true, originPattern };
+        return {
+          success: false,
+          needsHostAccess: true,
+          origins,
+          originPattern,
+          reason: "needs-host",
+        };
       }
-
-      await injectContentScripts(tabId);
-      const response = await deliverPaste(tabId, textToPaste);
-      return { success: Boolean(response?.success) };
+      try {
+        return await pasteInTab(tabId, textToPaste);
+      } catch (retryError) {
+        return {
+          success: false,
+          reason: "inject-failed",
+          error: String(retryError?.message || retryError),
+        };
+      }
     }
 
     return {
       success: false,
-      needsHostAccess: Boolean(originPattern),
-      originPattern: originPattern || undefined,
+      needsHostAccess: true,
+      origins,
+      originPattern,
+      reason: "needs-host",
       error: String(injectError?.message || injectError),
     };
   }
@@ -194,22 +309,6 @@ function openSidePanelForActiveTab() {
     });
 }
 
-function focusRecorderOrPanel() {
-  if (recorderTabId !== null) {
-    return chrome.tabs
-      .update(recorderTabId, { active: true })
-      .catch(() => openSidePanelForActiveTab());
-  }
-  return openSidePanelForActiveTab();
-}
-
-function clearRecorderTabState() {
-  recorderTabId = null;
-  recorderReturnTabId = null;
-  recorderPort = null;
-  pendingRecorderCommand = null;
-}
-
 function closeRecorderTab() {
   const id = recorderTabId;
   clearRecorderTabState();
@@ -225,23 +324,8 @@ function backgroundRecorderTab() {
     .then(() => chrome.tabs.update(recorderReturnTabId, { active: true }))
     .catch(() => {
       recorderReturnTabId = null;
+      persistRecorderSession();
     });
-}
-
-function clearRecordingNotification() {
-  return chrome.notifications.clear(RECORDING_NOTIFICATION_ID).catch(() => {});
-}
-
-function showRecordingNotification(languageCode) {
-  const n = notifyStringsForLanguage(languageCode);
-  return chrome.notifications.create(RECORDING_NOTIFICATION_ID, {
-    type: "basic",
-    iconUrl: "icons/icon48.png",
-    title: n.title,
-    message: n.message,
-    buttons: [{ title: n.openPanel }],
-    priority: 1,
-  });
 }
 
 function closeSidePanelForTab(tabId) {
@@ -257,21 +341,65 @@ function isSidePanelConnected() {
   return sidePanelPorts.size > 0;
 }
 
-function postToSidePanels(message) {
+function rememberPanelWindow(port, windowId) {
+  if (!Number.isInteger(windowId)) return;
+  panelWindowByPort.set(port, windowId);
+}
+
+function dictationPanelConnected() {
+  if (dictationWindowId == null) return sidePanelPorts.size > 0;
   for (const port of sidePanelPorts) {
-    try {
-      port.postMessage(message);
-    } catch (e) {
-      sidePanelPorts.delete(port);
-    }
+    if (panelWindowByPort.get(port) === dictationWindowId) return true;
+  }
+  return false;
+}
+
+function clearPanelGoneTimer() {
+  if (panelGoneTimer !== null) {
+    clearTimeout(panelGoneTimer);
+    panelGoneTimer = null;
   }
 }
 
-function relayToSidePanel(message) {
-  if (sidePanelPorts.size === 0) {
+function scheduleStopWhenPanelGone() {
+  clearPanelGoneTimer();
+  if (dictationPanelConnected()) return;
+  if (recorderTabId === null && !recorderPort) return;
+  panelGoneTimer = setTimeout(() => {
+    panelGoneTimer = null;
+    if (dictationPanelConnected()) return;
+    const told = postToRecorder({ type: "stopRecording" });
+    setTimeout(
+      () => {
+        if (!dictationPanelConnected()) closeRecorderTab();
+      },
+      told ? 1200 : 0,
+    );
+  }, PANEL_GONE_MS);
+}
+
+function postToSidePanels(message, windowId) {
+  let delivered = 0;
+  for (const port of sidePanelPorts) {
+    const portWindow = panelWindowByPort.get(port);
+    if (windowId != null && portWindow != null && portWindow !== windowId) {
+      continue;
+    }
+    try {
+      port.postMessage(message);
+      delivered += 1;
+    } catch (e) {
+      sidePanelPorts.delete(port);
+      panelWindowByPort.delete(port);
+    }
+  }
+  return delivered;
+}
+
+function relayToSidePanel(message, windowId) {
+  if (postToSidePanels(message, windowId) === 0) {
     return Promise.reject(new Error("no-panel"));
   }
-  postToSidePanels(message);
   return Promise.resolve({ success: true });
 }
 
@@ -284,6 +412,49 @@ function postToRecorder(message) {
     recorderPort = null;
     return false;
   }
+}
+
+function requestLiveDraft(windowId) {
+  return new Promise((resolve) => {
+    let port = null;
+    for (const candidate of sidePanelPorts) {
+      if (windowId == null || panelWindowByPort.get(candidate) === windowId) {
+        port = candidate;
+        break;
+      }
+    }
+    if (!port && sidePanelPorts.size === 1) {
+      port = sidePanelPorts.values().next().value;
+    }
+    const fromStorage = () => {
+      chrome.storage.local.get("textDraft", (result) => {
+        resolve(result.textDraft || "");
+      });
+    };
+    if (!port) {
+      fromStorage();
+      return;
+    }
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const timer = setTimeout(() => {
+      port.onMessage.removeListener(onDraft);
+      fromStorage();
+    }, 400);
+    function onDraft(msg) {
+      if (msg?.type !== "liveDraft" || msg.requestId !== requestId) return;
+      clearTimeout(timer);
+      port.onMessage.removeListener(onDraft);
+      resolve(msg.text || "");
+    }
+    port.onMessage.addListener(onDraft);
+    try {
+      port.postMessage({ type: "getLiveDraft", requestId });
+    } catch (e) {
+      clearTimeout(timer);
+      port.onMessage.removeListener(onDraft);
+      fromStorage();
+    }
+  });
 }
 
 function placeRecorderBesideActiveTab(tabId) {
@@ -309,16 +480,14 @@ function openRecorderTab(autostart) {
     return chrome.tabs
       .get(recorderTabId)
       .then(async (tab) => {
-        // Keep the recorder next to the tab where the side panel is open.
         await placeRecorderBesideActiveTab(tab.id);
         if (autostart && recorderPort) {
           chrome.storage.local.get("language", (stored) => {
             postToRecorder({
               type: "startRecording",
-              language: stored.language || "ru-RU",
+              language: stored.language || defaultLocale(),
             });
           });
-          // Stay on the user's page — recorder keeps running in the background.
           backgroundRecorderTab();
         }
         return tab;
@@ -329,7 +498,6 @@ function openRecorderTab(autostart) {
       });
   }
 
-  // Open beside the current page so the mic prompt is on the same window strip.
   return createRecorderTab(url, { active: true });
 }
 
@@ -353,6 +521,7 @@ function createRecorderTab(url, options = {}) {
         recorderTabId = tab?.id ?? null;
         recorderReturnTabId =
           returnId != null && returnId !== recorderTabId ? returnId : null;
+        persistRecorderSession();
         return tab;
       });
     });
@@ -380,17 +549,16 @@ function openRecorderTabForMicPrompt() {
 
 function ensureRecorderAndCommand(command) {
   pendingRecorderCommand = command;
+  persistRecorderSession();
 
   if (postToRecorder(command)) {
     pendingRecorderCommand = null;
+    persistRecorderSession();
     if (
       command.type === "startRecording" ||
       command.type === "resumeRecording"
     ) {
       backgroundRecorderTab();
-    }
-    if (command.type === "stopRecording") {
-      // Tab closes after recorder reports stopped / closeRecorderWindow.
     }
     return Promise.resolve({ success: true });
   }
@@ -404,8 +572,12 @@ function ensureRecorderAndCommand(command) {
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === "sidePanel") {
     sidePanelPorts.add(port);
+    clearPanelGoneTimer();
     port.onMessage.addListener((msg) => {
       if (!msg || !msg.type) return;
+      rememberPanelWindow(port, msg.windowId);
+
+      if (msg.type === "panelHello" || msg.type === "liveDraft") return;
 
       if (
         msg.type === "startRecording" ||
@@ -413,21 +585,25 @@ chrome.runtime.onConnect.addListener((port) => {
         msg.type === "pauseRecording" ||
         msg.type === "resumeRecording"
       ) {
+        const portWindow = panelWindowByPort.get(port);
+        if (Number.isInteger(portWindow)) dictationWindowId = portWindow;
+        persistRecorderSession();
         chrome.storage.local.get("language", (stored) => {
           ensureRecorderAndCommand({
             type: msg.type,
-            language: msg.language || stored.language || "ru-RU",
+            language: msg.language || stored.language || defaultLocale(),
           }).catch(() => {});
         });
       } else if (msg.type === "openRecorderSetup") {
         openRecorderTab(false).catch(() => {});
       } else if (msg.type === "openRecorderForMicPrompt") {
-        // Open/activate recorder beside the side-panel tab for Chrome Allow.
         openRecorderTabForMicPrompt().catch(() => {});
       }
     });
     port.onDisconnect.addListener(() => {
       sidePanelPorts.delete(port);
+      panelWindowByPort.delete(port);
+      scheduleStopWhenPanelGone();
     });
     return;
   }
@@ -441,22 +617,18 @@ chrome.runtime.onConnect.addListener((port) => {
         if (pendingRecorderCommand) {
           const cmd = pendingRecorderCommand;
           pendingRecorderCommand = null;
+          persistRecorderSession();
           postToRecorder(cmd);
         }
         return;
       }
 
-      // Do not show chrome.notifications on recorderStarted — recognition
-      // restarts after silence and would spam the desktop toast.
       if (msg.type === "recorderStarted" || msg.type === "micGranted") {
-        // Hide recorder (switch back to the page with the side panel).
         backgroundRecorderTab();
       }
 
       if (msg.type === "needMicFocus") {
-        // Show recorder beside the user's tab so Chrome can show Allow once.
-        // After grant, micGranted / recorderStarted calls backgroundRecorderTab().
-        postToSidePanels({ type: "needMicFocus" });
+        postToSidePanels({ type: "needMicFocus" }, dictationWindowId);
         if (recorderTabId !== null) {
           placeRecorderBesideActiveTab(recorderTabId)
             .then(() => chrome.tabs.update(recorderTabId, { active: true }))
@@ -465,19 +637,11 @@ chrome.runtime.onConnect.addListener((port) => {
         return;
       }
 
-      if (
-        msg.type === "recorderStopped" ||
-        msg.type === "recorderError" ||
-        msg.type === "recorderWindowClosed"
-      ) {
-        clearRecordingNotification();
-      }
-
       if (msg.type === "closeRecorderWindow") {
         closeRecorderTab();
       }
 
-      postToSidePanels(msg);
+      postToSidePanels(msg, dictationWindowId);
     });
     port.onDisconnect.addListener(() => {
       if (recorderPort === port) recorderPort = null;
@@ -488,16 +652,17 @@ chrome.runtime.onConnect.addListener((port) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === recorderTabId) {
     clearRecorderTabState();
-    postToSidePanels({ type: "recorderWindowClosed" });
+    postToSidePanels({ type: "recorderWindowClosed" }, dictationWindowId);
   }
   if (tabId === recorderReturnTabId) {
     recorderReturnTabId = null;
+    persistRecorderSession();
   }
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local" || !changes.language) return;
-  const lang = changes.language.newValue || "ru-RU";
+  const lang = changes.language.newValue || defaultLocale();
   const title = contextMenuTitleForLanguage(lang);
   chrome.contextMenus.update("pasteTranscript", { title }, () => {
     if (chrome.runtime.lastError) {
@@ -514,14 +679,11 @@ chrome.runtime.onInstalled.addListener(() => {
     );
 
   chrome.storage.local.get("language", (stored) => {
-    createOrRefreshContextMenu(stored.language || "ru-RU");
+    createOrRefreshContextMenu(stored.language || defaultLocale());
   });
 
   chrome.storage.local.remove("sidePanelOpen");
-  clearRecordingNotification();
 });
-
-clearRecordingNotification();
 
 chrome.commands.onCommand.addListener((command) => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -529,13 +691,17 @@ chrome.commands.onCommand.addListener((command) => {
     if (!activeTab || !activeTab.id) return;
 
     if (command === "start_recording") {
-      relayToSidePanel({ action: "startRecording" }).catch(() => {
-        openSidePanelForTab(activeTab.id);
-      });
+      relayToSidePanel({ action: "startRecording" }, activeTab.windowId).catch(
+        () => {
+          openSidePanelForTab(activeTab.id);
+        },
+      );
     } else if (command === "stop_recording") {
-      relayToSidePanel({ action: "stopRecording" }).catch(() => {
-        openSidePanelForTab(activeTab.id);
-      });
+      relayToSidePanel({ action: "stopRecording" }, activeTab.windowId).catch(
+        () => {
+          openSidePanelForTab(activeTab.id);
+        },
+      );
     } else if (command === "toggle_side_panel") {
       if (isSidePanelConnected()) {
         closeSidePanelForTab(activeTab.id);
@@ -546,41 +712,30 @@ chrome.commands.onCommand.addListener((command) => {
   });
 });
 
-chrome.notifications.onClicked.addListener((notificationId) => {
-  if (notificationId !== RECORDING_NOTIFICATION_ID) return;
-  clearRecordingNotification();
-  focusRecorderOrPanel();
-});
-
-chrome.notifications.onButtonClicked.addListener(
-  (notificationId, buttonIndex) => {
-    if (notificationId !== RECORDING_NOTIFICATION_ID) return;
-    if (buttonIndex === 0) {
-      clearRecordingNotification();
-      focusRecorderOrPanel();
-    }
-  },
-);
-
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== "pasteTranscript" || !tab?.id) return;
 
-  chrome.storage.local.get("textDraft", (result) => {
-    const textToPaste = result.textDraft || "";
-    if (!textToPaste) return;
-
-    sendPasteToTab(tab.id, textToPaste, {
-      requestPermission: true,
-      tabUrl: tab.url,
-    }).catch((error) => console.error("Context menu paste failed:", error));
-  });
+  requestLiveDraft(tab.windowId)
+    .then((textToPaste) => {
+      if (!textToPaste) return;
+      return sendPasteToTab(tab.id, textToPaste, {
+        requestPermission: true,
+        tabUrl: tab.url,
+      });
+    })
+    .catch((error) => console.error("Context menu paste failed:", error));
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "closeSidePanel") {
+    const windowId = sender.tab?.windowId;
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        closeSidePanelForTab(tabs[0].id).finally(() => {
+      const tab =
+        (windowId != null
+          ? tabs.find((item) => item.windowId === windowId)
+          : null) || tabs[0];
+      if (tab?.id) {
+        closeSidePanelForTab(tab.id).finally(() => {
           sendResponse({ success: true });
         });
       } else {
@@ -592,14 +747,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "pasteToActiveTab") {
     const textToPaste = request.textToPaste || "";
-    // Panel must call chrome.permissions.request itself (user gesture).
     const fromExtensionPage = Boolean(
       sender.url && sender.url.startsWith("chrome-extension://"),
     );
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const windowId = Number.isInteger(request.windowId)
+      ? request.windowId
+      : undefined;
+    const query = windowId != null
+      ? { active: true, windowId }
+      : { active: true, currentWindow: true };
+    chrome.tabs.query(query, (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab?.id) {
-        sendResponse({ success: false, error: "no-tab" });
+        sendResponse({ success: false, reason: "no-tab" });
         return;
       }
 
@@ -608,20 +768,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         tabUrl: activeTab.url,
       })
         .then((result) => sendResponse(result))
-        .catch(() => sendResponse({ success: false }));
+        .catch(() => sendResponse({ success: false, reason: "inject-failed" }));
     });
-    return true;
-  }
-
-  if (request.type === "recordingStarted") {
-    // Intentionally no desktop toast — recorder window is the indicator.
-    sendResponse({ success: true });
-    return true;
-  }
-
-  if (request.type === "recordingStopped") {
-    clearRecordingNotification();
-    sendResponse({ success: true });
     return true;
   }
 
@@ -636,21 +784,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       settings.language = request.language;
     }
 
+    if (request.uiLanguage !== undefined) {
+      settings.uiLanguage = request.uiLanguage;
+    }
+
     chrome.storage.local.set(settings);
     sendResponse({ success: true });
     return true;
   }
 
   if (request.action === "getSettings") {
-    chrome.storage.local.get(["autoPunctuation", "language"], (result) => {
-      sendResponse({
-        autoPunctuation: result.autoPunctuation || "medium",
-        language: result.language || "ru-RU",
-      });
-    });
+    chrome.storage.local.get(
+      ["autoPunctuation", "language", "uiLanguage"],
+      (result) => {
+        const fallback = defaultLocale();
+        sendResponse({
+          autoPunctuation: result.autoPunctuation || "medium",
+          language: result.language || fallback,
+          uiLanguage: result.uiLanguage || fallback,
+        });
+      },
+    );
     return true;
   }
 
   sendResponse({ success: false });
   return true;
 });
+
+restoreRecorderSession();

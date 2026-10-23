@@ -424,7 +424,7 @@ body {
   text-align: center;
   padding: var(--space-4);
   transition: opacity 0.3s ease;
-  pointer-events: auto;
+  pointer-events: none;
   backdrop-filter: blur(4px);
 }
 
@@ -739,6 +739,11 @@ body {
   .animated-bg {
     transition: none;
   }
+}
+
+body.panel-inactive .orb,
+body.panel-inactive .particle {
+  animation-play-state: paused;
 }
 
 @media (max-width: 420px) {

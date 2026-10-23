@@ -29,6 +29,7 @@
   /** @type {ReturnType<typeof AppI18n.getPack>|null} */
   let pack = null;
   let pendingStart = false;
+  let emitStoppedOnEnd = true;
   let sessionAnnounced = false;
   let closeTimer = null;
   const params = new URLSearchParams(location.search);
@@ -52,7 +53,7 @@
     if (!p) return;
     document.documentElement.lang = p.htmlLang || "en";
     document.title = p.recorderDocTitle || "Recorder — Voice to Text Pro";
-    setText(brandTitle, p.headerTitle || p.recorderBrandTitle);
+    setText(brandTitle, p.headerTitle);
     setText(brandTag, p.recorderBrandTag || p.tagline);
     setText(heading, p.recorderHeading);
     setText(body, p.recorderBody);
@@ -108,7 +109,6 @@
       });
       post({ type: "recorderReady" });
       if (pendingStart) {
-        pendingStart = false;
         startRecognition();
       }
     } catch (e) {
@@ -163,7 +163,6 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
-      await chrome.storage.local.set({ microphoneAccessGranted: true });
       return true;
     } catch (e) {
       return false;
@@ -212,6 +211,7 @@
       isRecording = false;
       isPaused = false;
       sessionAnnounced = false;
+      emitStoppedOnEnd = false;
       post({ type: "recorderError", error: errorCode });
 
       if (errorCode === "not-allowed" || errorCode === "permission-denied") {
@@ -226,13 +226,16 @@
     recognition.onend = () => {
       if (isRecording && !isPaused) {
         scheduleRestart();
-      } else if (!isPaused) {
+        return;
+      }
+      if (!isPaused && emitStoppedOnEnd) {
         post({ type: "recorderStopped" });
         setStatus(
           "ok",
           pack?.recorderIdle || "Idle. Press Start in the side panel.",
         );
       }
+      emitStoppedOnEnd = true;
     };
 
     recognition.onresult = (event) => {
@@ -254,6 +257,8 @@
   }
 
   async function startRecognition() {
+    pendingStart = false;
+    emitStoppedOnEnd = true;
     const ok = await ensureMic();
     if (!ok) {
       allowBtn.disabled = false;
@@ -294,6 +299,7 @@
     isPaused = false;
     isRecording = false;
     sessionAnnounced = false;
+    emitStoppedOnEnd = false;
     cancelRestart();
     if (recognition) {
       try {
@@ -361,8 +367,8 @@
     connectPort();
 
     if (autoStart) {
-      pendingStart = true;
-      startRecognition();
+      if (port) startRecognition();
+      else pendingStart = true;
     } else {
       // Setup / mic-prompt tab: try silently; if denied, wait for Allow click.
       ensureMic().then((ok) => {

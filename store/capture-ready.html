@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice to Text Pro — listing screenshot</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html,body{margin:0;height:100%;background:#1a1a2e}
+  .listing-frame{display:flex;height:100vh;width:100vw}
+  .listing-page{flex:1;background:linear-gradient(160deg,#1e293b,#0f172a);display:flex;align-items:center;justify-content:center;color:#94a3b8;font:14px system-ui}
+  .listing-page-inner{max-width:420px;text-align:center;opacity:.85}
+  .listing-panel{width:380px;min-width:380px;height:100vh;border-left:1px solid rgba(255,255,255,.08);box-shadow:-12px 0 40px rgba(0,0,0,.35);position:relative;overflow:hidden;background:#0f0f1f}
+  .listing-panel iframe,.listing-panel .panel-root{border:0;width:100%;height:100%}
+</style></head><body>
+<div class="listing-frame">
+  <div class="listing-page"><div class="listing-page-inner"><strong>Active tab</strong><br>Editable field on the page<br><span style="font-size:12px">Side panel → recording enabled after consent</span></div></div>
+  <div class="listing-panel"><div class="panel-root">
+
+    <div class="animated-bg" aria-hidden="true">
+      <div class="gradient-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+      </div>
+      <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+      </div>
+    </div>
+
+    <div class="app-container">
+      <header class="app-header">
+        <div class="header-main">
+          <div class="logo">
+            <div class="logo-icon">🎤</div>
+            <div class="logo-text">
+              <h1>Voice to Text Pro</h1>
+              <span class="tagline">AI punctuation • Spell check</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="icon-btn close-btn"
+            id="closeBtn"
+            title="Close panel"
+            aria-label="Close panel"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="status-card status-idle" id="statusCard">
+          <div
+            class="status-icon"
+            id="waveContainer"
+            style="display: none"
+            aria-hidden="true"
+          >
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+          </div>
+          <span id="status" role="status" aria-live="polite" aria-atomic="true"
+            >Ready to record — consent accepted</span
+          >
+          <div class="recording-time" id="recordingTime" style="display: none">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span id="timeCount">00:00</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section
+          class="editor-section"
+          id="editor-container"
+          aria-label="Recognized text area"
+        >
+          <div class="output-area">
+            <label for="output" class="visually-hidden">Recognized text</label>
+            <textarea
+              id="output"
+              name="output"
+              placeholder="Start speaking..."
+              rows="10"
+              spellcheck="true"
+              autocomplete="off"
+            ></textarea>
+          </div>
+          <section
+            class="editor-overlay"
+            id="editorOverlay"
+            aria-label="Hint"
+          >
+            <div class="overlay-icon" aria-hidden="true">🎙️</div>
+            <div class="overlay-text">Press “Start” and speak</div>
+            <div class="overlay-subtext">Text will appear here</div>
+          </section>
+        </section>
+
+        <section class="controls-section">
+          <div class="controls-row controls-record">
+            <button
+              type="button"
+              class="control-btn primary-btn"
+              id="startBtn"
+              title="Start recording (Ctrl+Shift+1)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Start</span>
+            </button>
+            <button
+              type="button"
+              class="control-btn hidden"
+              id="pauseBtn"
+              title="Pause recognition"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+              <span>Pause</span>
+            </button>
+            <button
+              type="button"
+              class="control-btn secondary-btn hidden"
+              id="stopBtn"
+              title="Stop recording (Ctrl+Shift+2)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+              <span>Stop</span>
+            </button>
+          </div>
+          <div class="controls-grid controls-actions">
+            <button
+              type="button"
+              class="control-btn"
+              id="insertBtn"
+              title="Insert into focused field (Ctrl+Shift+I)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5l-2.5 2.5 2.5 2.5 2.5-2.5-2.5-2.5z" />
+                <path d="M8 12h.01" />
+                <path d="M8 16h.01" />
+                <path d="M8 8h.01" />
+                <path d="M16 16h.01" />
+                <path d="M16 8h.01" />
+                <path d="M12 12h.01" />
+                <path d="M12 8h.01" />
+                <path d="M12 16h.01" />
+                <path d="M4 20h.01" />
+                <path d="M4 16h.01" />
+                <path d="M4 12h.01" />
+                <path d="M4 8h.01" />
+              </svg>
+              <span>Insert</span>
+            </button>
+            <button
+              type="button"
+              class="control-btn"
+              id="copyBtn"
+              title="Copy text"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path
+                  d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                ></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+            <button
+              type="button"
+              class="control-btn danger-btn"
+              id="clearBtn"
+              title="Clear text (Ctrl+Del)"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true"
+              >
+                <path
+                  d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"
+                ></path>
+                <line x1="18" y1="9" x2="12" y2="15"></line>
+                <line x1="12" y1="9" x2="18" y2="15"></line>
+              </svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <div class="config-item">
+            <label for="language">Recognition language:</label>
+            <select id="language">
+              <option value="ru-RU">Russian</option>
+              <option value="en-US">English (US)</option>
+              <option value="uk-UA">Ukrainian</option>
+              <option value="es-ES">Spanish</option>
+              <option value="fr-FR">French</option>
+              <option value="de-DE">German</option>
+              <option value="it-IT">Italian</option>
+              <option value="ja-JP">Japanese</option>
+              <option value="ko-KR">Korean</option>
+              <option value="zh-CN">Chinese</option>
+            </select>
+          </div>
+          <div class="config-item">
+            <label for="autoPunctuation">AI punctuation:</label>
+            <select id="autoPunctuation">
+              <option value="off">Off</option>
+              <option value="low">Low (periods only)</option>
+              <option value="medium">Medium (commas, periods)</option>
+              <option value="high">High (questions, exclamations)</option>
+            </select>
+          </div>
+        </section>
+      </main>
+
+      <section
+        class="instructions-section"
+        id="privacyConsent"
+        style="display: none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="privacyHeading"
+      >
+        <div class="privacy-card">
+          <div class="privacy-header">
+            <h3 id="privacyHeading">Privacy notice</h3>
+          </div>
+          <p id="privacyBody" class="privacy-body">
+            Speech recognition uses Google’s Web Speech service over the
+            internet. Drafts are stored locally in chrome.storage. Recording
+            starts only after you accept.
+          </p>
+          <p class="privacy-link-wrap">
+            <a
+              id="privacyPolicyLink"
+              href="privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Privacy Policy</a
+            >
+          </p>
+          <button type="button" class="control-btn primary-btn" id="privacyAcceptBtn">
+            <span>Accept and continue</span>
+          </button>
+        </div>
+      </section>
+
+      <section
+        class="instructions-section"
+        id="instructions"
+        style="display: none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="instructionsHeading"
+      >
+        <div class="instructions-card">
+          <div class="instructions-header">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <h3 id="instructionsHeading">Microphone access required</h3>
+          </div>
+          <div class="instructions-content">
+            <ol>
+              <li>Click the 🔒 icon in the address bar</li>
+              <li>Choose “Site settings”</li>
+              <li>Allow microphone access</li>
+              <li>Reload the page</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <div class="footer-content">
+          <div class="version">v3.4.1 • Voice to Text Pro</div>
+          <div class="footer-stats">
+            <div class="stat-item" id="sessionStats">
+              <span>Session: 0 words</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+      </div></div></div></body></html>

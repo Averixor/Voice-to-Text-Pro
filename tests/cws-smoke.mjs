@@ -26,7 +26,6 @@ function checkManifest() {
     "activeTab",
     "storage",
     "contextMenus",
-    "notifications",
     "sidePanel",
     "scripting",
   ].sort();
@@ -131,26 +130,24 @@ async function waitForDebugger(timeoutMs = 20000) {
 }
 
 async function cdp(wsUrl, method, params = {}) {
-  const { default: WebSocket } = await import("node:ws").catch(() => ({
-    default: null,
-  }));
-  if (!WebSocket) {
-    // Minimal CDP over raw websocket without ws package — use fetch HTTP endpoints only.
+  const WebSocketCtor = globalThis.WebSocket;
+  if (!WebSocketCtor) {
     throw new Error("no-ws");
   }
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocketCtor(wsUrl);
     const id = 1;
-    ws.on("open", () => ws.send(JSON.stringify({ id, method, params })));
-    ws.on("message", (data) => {
-      const msg = JSON.parse(String(data));
-      if (msg.id === id) {
-        ws.close();
-        if (msg.error) reject(new Error(JSON.stringify(msg.error)));
-        else resolve(msg.result);
-      }
+    ws.addEventListener("open", () => {
+      ws.send(JSON.stringify({ id, method, params }));
     });
-    ws.on("error", reject);
+    ws.addEventListener("message", (event) => {
+      const msg = JSON.parse(String(event.data));
+      if (msg.id !== id) return;
+      ws.close();
+      if (msg.error) reject(new Error(JSON.stringify(msg.error)));
+      else resolve(msg.result);
+    });
+    ws.addEventListener("error", () => reject(new Error("websocket error")));
   });
 }
 

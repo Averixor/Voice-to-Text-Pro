@@ -1,8 +1,8 @@
-# Voice to Text Pro — project checklist v3.4
+# Voice to Text Pro — project checklist v3.4.1
 
 ## Project description
 
-**Voice to Text Pro** is a Google Chrome extension (Manifest V3): speech to text via Web Speech API, **four AI punctuation levels**, spell check in the input field, UI in the **side panel**. The selected **recognition language** drives STT, spell check, and the native string pack in **`i18n.js`** (including `ru-RU` / `uk-UA`). Recording-started notification and context menu item are localized in **`background.js`** from `storage.language`. Paste injects `content.js` on demand after a user gesture; there is no permanent `content_scripts` block.
+**Voice to Text Pro** is a Google Chrome extension (Manifest V3, Chrome 116+). Speech recognition uses the Web Speech API in **`recorder.html`**, opened beside the page. The draft and controls live in the **side panel**. **Smart punctuation** is a local rule set (not a generative model). Spell check is the browser checker and follows the recognition language. Interface language is chosen separately. Paste injects `content.js` on demand after a user gesture; there is no permanent `content_scripts` block and no `notifications` permission.
 
 ---
 
@@ -11,11 +11,13 @@
 ```text
 Voice-to-Text-Pro-v3.4/
 ├── manifest.json                 # MV3: permissions, optional_host_permissions, side_panel, commands
-├── background.js                 # Service worker: menu, notifications, commands, on-demand paste
+├── background.js                 # Service worker: menu, commands, recorder tab, on-demand paste
+├── recorder.html / recorder.js   # Microphone + SpeechRecognition host
 ├── i18n.js                       # UI strings + punctuation regex; globalThis.AppI18n
 ├── sidepanel.html                # Panel markup (i18n.js + sidepanel.js)
-├── sidepanel.js                  # Panel recognition, privacy consent, applyAppLocale(), storage
+├── sidepanel.js                  # Draft, privacy consent, applyAppLocale(), storage
 ├── content.js                    # Paste-only helper (injected after user gesture)
+├── scripts/pack-extension.mjs    # Store zip, manifest at archive root
 ├── privacy.html                  # Privacy Policy (package copy)
 ├── styles.css                    # Side panel styles + prefers-reduced-motion
 ├── LICENSE                       # MIT

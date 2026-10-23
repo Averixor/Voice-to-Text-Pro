@@ -48,8 +48,37 @@ class VoiceToTextPasteHelper {
     );
   }
 
+  deepActiveElement(start) {
+    let current = start;
+    const seen = new Set();
+    while (
+      current &&
+      current.shadowRoot &&
+      current.shadowRoot.activeElement &&
+      !seen.has(current)
+    ) {
+      seen.add(current);
+      current = current.shadowRoot.activeElement;
+    }
+    return current || start || null;
+  }
+
+  parentAcrossShadow(node) {
+    if (!node) return null;
+    if (node.parentElement) return node.parentElement;
+    const root = typeof node.getRootNode === "function" ? node.getRootNode() : null;
+    if (
+      root &&
+      typeof ShadowRoot !== "undefined" &&
+      root instanceof ShadowRoot
+    ) {
+      return root.host;
+    }
+    return null;
+  }
+
   findEditableElement(element) {
-    let current = element;
+    let current = this.deepActiveElement(element);
     while (
       current &&
       current !== document &&
@@ -58,7 +87,7 @@ class VoiceToTextPasteHelper {
       if (this.isEditableElement(current)) {
         return current;
       }
-      current = current.parentElement;
+      current = this.parentAcrossShadow(current);
     }
     return null;
   }
@@ -112,7 +141,9 @@ class VoiceToTextPasteHelper {
   }
 
   getPasteTarget() {
-    const activeEditable = this.findEditableElement(document.activeElement);
+    const activeEditable = this.findEditableElement(
+      this.deepActiveElement(document.activeElement),
+    );
     if (activeEditable) {
       this.rememberEditableElement(activeEditable);
       return activeEditable;
@@ -156,6 +187,15 @@ class VoiceToTextPasteHelper {
       selection.addRange(range);
     }
 
+    target.focus();
+    try {
+      if (document.execCommand("insertText", false, textToPaste)) {
+        return "command";
+      }
+    } catch {
+      // Fall through to a DOM insert.
+    }
+
     const activeRange =
       selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
 
@@ -167,19 +207,11 @@ class VoiceToTextPasteHelper {
       activeRange.setEndAfter(textNode);
       selection.removeAllRanges();
       selection.addRange(activeRange);
-      return true;
-    }
-
-    try {
-      if (document.execCommand("insertText", false, textToPaste)) {
-        return true;
-      }
-    } catch {
-      // Fall through to append.
+      return "dom";
     }
 
     target.appendChild(document.createTextNode(textToPaste));
-    return true;
+    return "dom";
   }
 
   pasteText(textToPaste) {
@@ -194,6 +226,19 @@ class VoiceToTextPasteHelper {
     if (target) {
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
         target.focus();
+        try {
+          if (document.execCommand("insertText", false, textToPaste)) {
+            success = true;
+          }
+        } catch {
+          success = false;
+        }
+
+        if (success) {
+          chrome.runtime.sendMessage({ action: "pasteCompleted", success: true });
+          return true;
+        }
+
         let start = target.value.length;
         let end = start;
 
@@ -246,8 +291,9 @@ class VoiceToTextPasteHelper {
         target.getAttribute("contenteditable") === "true"
       ) {
         target.focus();
-        success = this.insertIntoContentEditable(target, textToPaste);
-        if (success) {
+        const mode = this.insertIntoContentEditable(target, textToPaste);
+        success = mode === "command" || mode === "dom";
+        if (mode === "dom") {
           target.dispatchEvent(
             new InputEvent("input", {
               bubbles: true,

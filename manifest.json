@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "Voice to Text Pro",
   "version": "3.4.1",
-  "description": "Advanced speech-to-text with spell check and AI punctuation in the Chrome side panel",
+  "description": "Speech to text with spell check and smart punctuation in the Chrome side panel",
+  "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
     "storage",
     "contextMenus",
-    "notifications",
     "sidePanel",
     "scripting"
   ],

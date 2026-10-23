@@ -1,0 +1,20 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --check background.js
+      - run: node --check sidepanel.js
+      - run: node --check content.js
+      - run: node --check recorder.js
+      - run: node --check i18n.js
+      - run: npm test

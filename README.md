@@ -1,8 +1,8 @@
-# Voice-to-Text Pro 3.4
+# Voice-to-Text Pro 3.4.1
 
 **Voice-to-Text Pro** is a Chrome extension that converts speech to text using the **Web Speech API**.
 
-The extension works in the **Chrome Side Panel** and provides multilingual speech recognition, smart punctuation, browser spell check, text insertion into web pages, clipboard actions, local draft saving, and a localized interface.
+The draft and controls live in the **Chrome side panel**. Recognition runs in a **recorder tab** opened beside the current page, because the side panel cannot reliably use the microphone. The extension also provides smart punctuation (local rules, not a generative model), browser spell check, text insertion into web pages, clipboard actions, local draft saving, and separate interface and recognition languages.
 
 ---
 
@@ -11,7 +11,8 @@ The extension works in the **Chrome Side Panel** and provides multilingual speec
 ### Speech Recognition
 
 - High-quality speech-to-text recognition through the Web Speech API.
-- Main workflow runs in the Chrome Side Panel.
+- Controls, editing, and the draft live in the Chrome side panel.
+- Speech recognition runs in a recorder tab next to the page and keeps listening in the background after you allow the microphone.
 - Supports interim and final recognition results.
 - Continuous recognition with automatic restart after recognition interruptions.
 - Inserts recognized text into editable fields on web pages.
@@ -40,25 +41,23 @@ The extension includes four punctuation modes:
 | Off    | Automatic punctuation is disabled                 |
 | Low    | Minimal punctuation assistance                    |
 | Medium | Balanced punctuation assistance                   |
-| High   | Advanced punctuation with language-specific rules |
+| High   | Question mark only if the phrase starts with a question word; otherwise a period when the chunk is long enough |
 
 Smart punctuation features:
 
 - Automatic capitalization after sentence endings.
 - Detection of `.`, `?`, `!`, `:`, `;`, `…`, and line breaks.
-- Language-specific question and exclamation patterns, especially in High mode.
+- Language-specific question words are checked only at the start of a recognition chunk. A period can still be added after each chunk (a pause), including in the middle of a sentence you have not finished.
 - Language-specific regex packs live in `i18n.js`; the side panel applies them when formatting recognition results.
 
 ### UI Localization
 
-The selected recognition language automatically controls:
+Recognition language and interface language are separate:
 
-- Web Speech API recognition language.
-- Side panel interface language.
-- Text field `lang` attribute.
-- Browser spell check language.
-- Localized notifications.
-- Localized context menu items.
+- Web Speech API recognition language and the text field `lang` / spell-check language follow **Recognition language**.
+- Side panel strings follow **Interface language**.
+- The context menu follows the recognition language.
+- The first-run default for both is `chrome.i18n.getUILanguage()`, mapped to the nearest supported locale.
 
 ### Text Tools
 
@@ -106,7 +105,7 @@ On macOS:
 
 ## Installation
 
-1. Download the release archive: `Voice-to-Text-Pro-v3.4.zip`.
+1. Download the release archive: `dist/Voice-to-Text-Pro-v3.4.1.zip` (build it with `npm run pack`).
 2. Extract the archive.
 3. Open Google Chrome.
 4. Go to `chrome://extensions/`.
@@ -148,10 +147,13 @@ The extension uses `chrome.storage.local` for settings and draft persistence.
 
 | Key                      | Description                                          |
 | ------------------------ | ---------------------------------------------------- |
-| `language`               | Selected BCP 47 language code                        |
+| `language`               | Recognition language (BCP 47)                    |
+| `uiLanguage`             | Side panel interface language                    |
 | `autoPunctuation`        | Punctuation level: `off`, `low`, `medium`, or `high` |
-| `textDraft`              | Current text draft                                   |
-| `privacyConsentAccepted` | User accepted the in-panel privacy notice            |
+| `draftRetention`         | `keep`, `on-close`, or `7d`                      |
+| `textDraft`              | Current text draft                               |
+| `textDraftSavedAt`       | Unix time of the last draft save                 |
+| `privacyConsentAccepted` | User accepted the in-panel privacy notice        |
 
 ---
 
@@ -162,8 +164,9 @@ Main files:
 | File                             | Description                                                 |
 | -------------------------------- | ----------------------------------------------------------- |
 | `manifest.json`                  | Manifest V3 configuration                                   |
-| `background.js`                  | Service worker for commands, menu, notifications, injection |
-| `sidepanel.html`                 | Side panel markup                                           |
+| `background.js`                  | Service worker: commands, menu, recorder tab, paste injection |
+| `recorder.html` / `recorder.js`  | Microphone and Web Speech API host                    |
+| `sidepanel.html`                 | Side panel markup                                     |
 | `sidepanel.js`                   | Main side panel logic                                       |
 | `i18n.js`                        | Localization and punctuation rules                          |
 | `content.js`                     | On-demand paste helper (injected after a user gesture)      |
@@ -181,11 +184,12 @@ Main files:
 
 The extension separates responsibilities clearly:
 
-- **Side Panel** — speech recognition, editing, settings, and interface.
-- **Content script (on demand)** — inserting text into web pages after Insert or context-menu paste.
-- **Shared storage** — data exchange through `chrome.storage.local`.
+- **Side panel** — editing, settings, smart punctuation, and the draft.
+- **Recorder tab** — microphone access and Web Speech API. It opens beside the page and stays in the background while you dictate.
+- **Content script (on demand)** — inserting text into web pages after Insert or context-menu paste. Injected into frames the extension can reach; open shadow roots are walked when the focused field is inside one.
+- **Storage** — settings and the draft in `chrome.storage.local`. Recorder tab ids live in `chrome.storage.session` until the browser session ends.
 
-There is no permanent `content_scripts` registration. After a user gesture, the service worker injects `i18n.js` and `content.js` with `chrome.scripting` when needed (and may request optional host access for that origin).
+There is no permanent `content_scripts` registration. After a user gesture, the service worker injects `content.js` with `chrome.scripting`. If the tab URL is hidden, Insert asks for optional access to `http` and `https` pages instead of guessing an origin.
 
 ---
 
@@ -245,7 +249,7 @@ Try the following:
 
 ## Requirements
 
-- Google Chrome 114+
+- Google Chrome 116+
 - Chrome Side Panel support
 - Microphone
 - Internet connection for speech recognition
@@ -263,9 +267,13 @@ Try the following:
 
 ## Release
 
-Recommended release archive name:
+Build the store zip from the repo root so `manifest.json` is at the archive root:
 
-`Voice-to-Text-Pro-v3.4.zip`
+```bash
+npm run pack
+```
+
+Output: `dist/Voice-to-Text-Pro-v3.4.1.zip` (gitignored). Publish that file on GitHub Releases; do not commit zip archives.
 
 ---
 
@@ -285,7 +293,7 @@ Averixor
 
 **Voice-to-Text Pro** — це розширення для Google Chrome, яке перетворює мовлення на текст за допомогою **Web Speech API**.
 
-Розширення працює в **боковій панелі Chrome** та підтримує багатомовне розпізнавання мовлення, розумну пунктуацію, перевірку орфографії, вставку тексту на веб-сторінки, роботу з буфером обміну, локальне збереження чернетки та локалізований інтерфейс.
+Розширення тримає чернетку і кнопки в **боковій панелі Chrome**. Розпізнавання йде у **вкладці рекордера** поруч зі сторінкою, бо панель не може надійно користуватися мікрофоном. Є розумна пунктуація (локальні правила, не генеративна модель), перевірка орфографії браузера, вставка на сторінку, буфер обміну і окремі мови інтерфейсу та розпізнавання.
 
 ---
 
@@ -389,7 +397,7 @@ Averixor
 
 ## Встановлення
 
-1. Завантажте релізний архів: `Voice-to-Text-Pro-v3.4.zip`.
+1. Завантажте релізний архів: `Voice-to-Text-Pro-v3.4.1.zip`.
 2. Розпакуйте архів.
 3. Відкрийте Google Chrome.
 4. Перейдіть за адресою `chrome://extensions/`.
@@ -529,7 +537,7 @@ Averixor
 
 ## Вимоги
 
-- Google Chrome 114+
+- Google Chrome 116+
 - Підтримка Chrome Side Panel
 - Мікрофон
 - Підключення до інтернету для розпізнавання мовлення
@@ -549,7 +557,7 @@ Averixor
 
 Рекомендована назва релізного архіву:
 
-`Voice-to-Text-Pro-v3.4.zip`
+`Voice-to-Text-Pro-v3.4.1.zip`
 
 ---
 
