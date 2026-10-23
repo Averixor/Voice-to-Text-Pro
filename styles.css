@@ -620,6 +620,10 @@ body {
 .privacy-card .control-btn,
 .instructions-content .control-btn {
   width: 100%;
+  margin-top: var(--space-3);
+}
+
+.instructions-content .control-btn.primary-btn {
   margin-top: var(--space-4);
 }
 

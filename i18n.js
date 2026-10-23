@@ -266,13 +266,12 @@
       punctMedium: "Средний (запятые, точки)",
       punctHigh: "Высокий (вопросы, восклицания)",
       instructionsHeading: "Требуется доступ к микрофону",
-      inst1: "Нажмите кнопку ниже прямо в этой панели (на вашей вкладке)",
-      inst2:
-        "В запросе Chrome нажмите «Разрешить» — он появится у этой вкладки",
-      inst3: "Запись потом идёт во фоновой вкладке расширения слева",
-      inst4:
-        "Сайты во вкладках не затрагиваются — разрешение только для расширения",
+      inst1: "Не используйте замок 🔒 сайта (GitHub и т.п.) — это не для расширения",
+      inst2: "Нажмите «Разрешить микрофон» — вкладка слева откроется сама",
+      inst3: "Один раз нажмите Allow — Chrome запомнит «Разрешить», как в настройках сайта",
+      inst4: "Или откройте настройки Chrome ниже и поставьте Микрофон → Разрешить",
       btnMicSettings: "Разрешить микрофон",
+      btnMicChromeSettings: "Открыть настройки микрофона Chrome",
       micPageDocTitle: "Микрофон — Голос в Текст Pro",
       micPageHeading: "Разрешить микрофон расширению",
       micPageBody:
@@ -305,7 +304,7 @@
         "Ошибка: Ваш браузер не поддерживает Speech Recognition API.",
       errMic: "Нет доступа к микрофону",
       errMicDetail:
-        "Нет доступа к микрофону. Нажмите «Разрешить микрофон» в этой панели и подтвердите запрос Chrome на этой вкладке.",
+        "Нет доступа к микрофону расширения. Замок сайта в адресной строке не помогает — нажмите «Разрешить микрофон» в панели.",
       errNetwork: "Ошибка сети",
       errNetworkDetail: "Ошибка сети. Проверьте подключение.",
       errRecognition: "Ошибка распознавания",
@@ -361,12 +360,12 @@
       punctMedium: "Середній (коми, крапки)",
       punctHigh: "Високий (питання, оклики)",
       instructionsHeading: "Потрібен доступ до мікрофона",
-      inst1: "Натисніть кнопку нижче прямо в цій панелі (на вашій вкладці)",
-      inst2:
-        "У запиті Chrome натисніть «Дозволити» — він з’явиться біля цієї вкладки",
-      inst3: "Запис потім іде у фоновій вкладці розширення зліва",
-      inst4: "Сайти у вкладках не змінюються — дозвіл лише для розширення",
+      inst1: "Не використовуйте замок 🔒 сайту (GitHub тощо) — це не для розширення",
+      inst2: "Натисніть «Дозволити мікрофон» — вкладка зліва відкриється сама",
+      inst3: "Один раз натисніть Allow — Chrome запам’ятає «Дозволити», як у налаштуваннях",
+      inst4: "Або відкрийте налаштування Chrome нижче і поставте Мікрофон → Дозволити",
       btnMicSettings: "Дозволити мікрофон",
+      btnMicChromeSettings: "Відкрити налаштування мікрофона Chrome",
       micPageDocTitle: "Мікрофон — Голос у Текст Pro",
       micPageHeading: "Дозволити мікрофон розширенню",
       micPageBody:
@@ -457,11 +456,12 @@
       punctMedium: "Medium (commas, periods)",
       punctHigh: "High (questions, exclamations)",
       instructionsHeading: "Microphone access required",
-      inst1: "Press the button below in this panel (on your current tab)",
-      inst2: "In the Chrome prompt, press Allow — it appears on this tab",
-      inst3: "Recording then runs in a background extension tab on the left",
-      inst4: "Websites are unchanged — permission is only for the extension",
+      inst1: "Do not use the site 🔒 lock (GitHub, etc.) — not for the extension",
+      inst2: "Press Allow microphone — a left tab opens by itself",
+      inst3: "Press Allow once — Chrome remembers Allow (same as site details)",
+      inst4: "Or open Chrome settings below and set Microphone → Allow",
       btnMicSettings: "Allow microphone",
+      btnMicChromeSettings: "Open Chrome microphone settings",
       micPageDocTitle: "Microphone — Voice to Text Pro",
       micPageHeading: "Allow microphone for this extension",
       micPageBody:
@@ -558,6 +558,7 @@
         "Chrome recordará Permitir para la extensión (los sitios no cambian)",
       inst4: "Cierre la ventana y pulse Iniciar otra vez en el panel",
       btnMicSettings: "Permitir micrófono en la extensión",
+      btnMicChromeSettings: "Abrir ajustes del micrófono de Chrome",
       micPageDocTitle: "Micrófono — Voz a Texto Pro",
       micPageHeading: "Permitir el micrófono a la extensión",
       micPageBody:
@@ -657,6 +658,7 @@
       inst4:
         "Fermez la fenêtre et appuyez à nouveau sur Démarrer dans le panneau",
       btnMicSettings: "Autoriser le micro dans l’extension",
+      btnMicChromeSettings: "Ouvrir les paramètres micro de Chrome",
       micPageDocTitle: "Microphone — Voix en Texte Pro",
       micPageHeading: "Autoriser le micro pour l’extension",
       micPageBody:
@@ -756,6 +758,7 @@
         "Chrome speichert Zulassen für die Erweiterung (Websites unverändert)",
       inst4: "Fenster schließen und im Panel erneut auf Start drücken",
       btnMicSettings: "Mikrofon in der Erweiterung erlauben",
+      btnMicChromeSettings: "Chrome-Mikrofoneinstellungen öffnen",
       micPageDocTitle: "Mikrofon — Sprache zu Text Pro",
       micPageHeading: "Mikrofon für die Erweiterung erlauben",
       micPageBody:
@@ -855,6 +858,7 @@
       inst3: "Chrome ricorda Consenti per l’estensione (i siti non cambiano)",
       inst4: "Chiudi la finestra e premi di nuovo Avvia nel pannello",
       btnMicSettings: "Consenti microfono nell’estensione",
+      btnMicChromeSettings: "Apri impostazioni microfono di Chrome",
       micPageDocTitle: "Microfono — Voce in Testo Pro",
       micPageHeading: "Consenti il microfono all’estensione",
       micPageBody:
@@ -955,6 +959,7 @@
       inst3: "Chrome が拡張機能への許可を記憶します（サイトは変わりません）",
       inst4: "ウィンドウを閉じ、パネルで再度「開始」を押す",
       btnMicSettings: "拡張機能でマイクを許可",
+      btnMicChromeSettings: "Chrome のマイク設定を開く",
       micPageDocTitle: "マイク — 音声テキスト変換 Pro",
       micPageHeading: "拡張機能にマイクを許可",
       micPageBody:
@@ -1053,6 +1058,7 @@
       inst3: "Chrome이 확장 프로그램 허용을 기억합니다(사이트는 그대로)",
       inst4: "창을 닫고 패널에서 다시 시작을 누르세요",
       btnMicSettings: "확장 프로그램에서 마이크 허용",
+      btnMicChromeSettings: "Chrome 마이크 설정 열기",
       micPageDocTitle: "마이크 — 음성을 텍스트로 Pro",
       micPageHeading: "확장 프로그램에 마이크 허용",
       micPageBody:
@@ -1149,6 +1155,7 @@
       inst3: "Chrome 会记住对本扩展的允许（网站不受影响）",
       inst4: "关闭窗口后在面板中再次点击开始",
       btnMicSettings: "在扩展中允许麦克风",
+      btnMicChromeSettings: "打开 Chrome 麦克风设置",
       micPageDocTitle: "麦克风 — 语音转文本 Pro",
       micPageHeading: "允许扩展使用麦克风",
       micPageBody:

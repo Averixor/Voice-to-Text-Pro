@@ -239,9 +239,9 @@
       setStatus(
         "err",
         pack?.micPageDenied ||
-          "Microphone denied. Allow it from the side panel.",
+          "Click «Allow microphone» on this tab, then confirm in Chrome.",
       );
-      // Ask the side panel on the user's page — do not focus this tab.
+      // Bring this leftmost tab forward so the Chrome Allow dialog can appear.
       post({ type: "needMicFocus" });
       return;
     }
@@ -342,7 +342,7 @@
       pendingStart = true;
       startRecognition();
     } else {
-      // Setup-only: if already granted, close; otherwise tell the panel to ask.
+      // Setup / mic-prompt tab: try silently; if denied, wait for Allow click.
       ensureMic().then((ok) => {
         if (ok) {
           allowBtn.disabled = true;
@@ -355,8 +355,11 @@
           );
           scheduleClose(900);
         } else {
-          post({ type: "needMicFocus" });
-          scheduleClose(400);
+          setStatus(
+            "err",
+            pack?.micPageDenied ||
+              "Click Allow microphone, then confirm in Chrome.",
+          );
         }
       });
     }

@@ -318,16 +318,17 @@ function openRecorderTab(autostart) {
   return createRecorderTab(url);
 }
 
-function createRecorderTab(url) {
+function createRecorderTab(url, options = {}) {
+  const active = Boolean(options.active);
   return chrome.tabs
     .query({ active: true, currentWindow: true })
     .then((tabs) => {
       const returnId = tabs[0]?.id ?? null;
-      // Far-left tab, opened in the background — user stays on their page.
+      // Far-left tab. Prefer background; activate only for one-shot mic Allow.
       return chrome.tabs
         .create({
           url,
-          active: false,
+          active,
           index: 0,
         })
         .then((tab) => {
@@ -337,6 +338,28 @@ function createRecorderTab(url) {
           return tab;
         });
     });
+}
+
+/** Leftmost extension tab, brought forward only so Chrome can show Allow. */
+function openRecorderTabForMicPrompt() {
+  const url = chrome.runtime.getURL("recorder.html") + "?setup=1";
+
+  if (recorderTabId !== null) {
+    return chrome.tabs
+      .get(recorderTabId)
+      .then((tab) =>
+        chrome.tabs
+          .move(tab.id, { index: 0 })
+          .catch(() => {})
+          .then(() => chrome.tabs.update(tab.id, { active: true })),
+      )
+      .catch(() => {
+        clearRecorderTabState();
+        return createRecorderTab(url, { active: true });
+      });
+  }
+
+  return createRecorderTab(url, { active: true });
 }
 
 function ensureRecorderAndCommand(command) {
@@ -382,6 +405,9 @@ chrome.runtime.onConnect.addListener((port) => {
         });
       } else if (msg.type === "openRecorderSetup") {
         openRecorderTab(false).catch(() => {});
+      } else if (msg.type === "openRecorderForMicPrompt") {
+        // Briefly activate the leftmost extension tab so Chrome can show Allow.
+        openRecorderTabForMicPrompt().catch(() => {});
       }
     });
     port.onDisconnect.addListener(() => {
@@ -412,9 +438,16 @@ chrome.runtime.onConnect.addListener((port) => {
       }
 
       if (msg.type === "needMicFocus") {
-        // Do not activate the recorder tab. The side panel (on the user's
-        // page) must request the mic so Chrome shows the prompt there.
+        // Tab was auto-created in the background; bring it forward so Chrome
+        // can show Allow once. After grant we switch the user back.
         postToSidePanels({ type: "needMicFocus" });
+        if (recorderTabId !== null) {
+          chrome.tabs
+            .move(recorderTabId, { index: 0 })
+            .catch(() => {})
+            .then(() => chrome.tabs.update(recorderTabId, { active: true }))
+            .catch(() => {});
+        }
         return;
       }
 

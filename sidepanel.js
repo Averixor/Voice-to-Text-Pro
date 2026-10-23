@@ -22,6 +22,8 @@ class SpeechToTextPro {
 
     this.privacyConsentAccepted = false;
     this.sidePanelPort = null;
+    this.pendingStartAfterMic = false;
+    this.awaitingMicGrant = false;
 
     this.initializeElements();
     this.connectSidePanelPort();
@@ -156,7 +158,21 @@ class SpeechToTextPro {
 
     if (msg.type === "micGranted") {
       this.microphoneAccessGranted = true;
+      this.awaitingMicGrant = false;
       this.instructions.style.display = "none";
+
+      // User allowed mic on the left tab — continue the Start that was waiting.
+      if (this.pendingStartAfterMic && !this.isRecording) {
+        this.pendingStartAfterMic = false;
+        this.updateUIStatus("preparing", this.pack.statusMicWait);
+        this.postToBackground({
+          type: "startRecording",
+          language: this.languageSelect?.value || this.currentLanguage,
+        });
+        return;
+      }
+
+      this.pendingStartAfterMic = false;
       if (!this.isRecording) {
         this.updateUIStatus("idle", this.pack.statusReady);
       }
@@ -164,9 +180,10 @@ class SpeechToTextPro {
     }
 
     if (msg.type === "needMicFocus") {
-      // Recorder could not get mic in the background tab — ask in the panel
-      // (the tab the user is looking at), never switch to the recorder tab.
-      this.showMicrophoneDenied();
+      // Background brings the leftmost recorder tab forward for Allow.
+      this.awaitingMicGrant = true;
+      this.pendingStartAfterMic = true;
+      this.updateUIStatus("preparing", this.pack.statusMicWait);
     }
   }
 
@@ -209,6 +226,7 @@ class SpeechToTextPro {
     this.autoPunctuationSelect = document.getElementById("autoPunctuation");
     this.instructions = document.getElementById("instructions");
     this.micSettingsBtn = document.getElementById("micSettingsBtn");
+    this.micChromeSettingsBtn = document.getElementById("micChromeSettingsBtn");
     this.privacyConsent = document.getElementById("privacyConsent");
     this.privacyAcceptBtn = document.getElementById("privacyAcceptBtn");
     this.privacyPolicyLink = document.getElementById("privacyPolicyLink");
@@ -295,7 +313,14 @@ class SpeechToTextPro {
     if (this.micSettingsBtn) {
       setText(
         this.micSettingsBtn.querySelector("span") || this.micSettingsBtn,
-        p.btnMicSettings || "Open microphone settings",
+        p.btnMicSettings || "Allow microphone",
+      );
+    }
+    if (this.micChromeSettingsBtn) {
+      setText(
+        this.micChromeSettingsBtn.querySelector("span") ||
+          this.micChromeSettingsBtn,
+        p.btnMicChromeSettings || "Open Chrome microphone settings",
       );
     }
 
@@ -337,6 +362,11 @@ class SpeechToTextPro {
     if (this.micSettingsBtn) {
       this.micSettingsBtn.addEventListener("click", () =>
         this.openMicrophonePermissionPage(),
+      );
+    }
+    if (this.micChromeSettingsBtn) {
+      this.micChromeSettingsBtn.addEventListener("click", () =>
+        this.openExtensionMicSettings(),
       );
     }
 
@@ -404,19 +434,22 @@ class SpeechToTextPro {
   }
 
   openMicrophonePermissionPage() {
-    // Request mic from the side panel (same tab the user is on) — not from
-    // the background recorder tab — so Chrome's permission UI appears here.
-    this.requestMicrophoneFromPanel().then((ok) => {
-      if (ok) {
-        this.instructions.style.display = "none";
-        this.showTransientStatus(
-          this.pack.recorderGrantedClosing || this.pack.statusReady,
-          2000,
-        );
-      } else {
-        this.showMicrophoneDenied();
-      }
-    });
+    // Always auto-create the leftmost extension tab for the mic prompt.
+    this.pendingStartAfterMic = false;
+    this.awaitingMicGrant = true;
+    this.updateUIStatus("preparing", this.pack.statusMicWait);
+    this.postToBackground({ type: "openRecorderForMicPrompt" });
+  }
+
+  openExtensionMicSettings() {
+    // Same screen as in Chrome site details — user can set Microphone → Allow.
+    const site = encodeURIComponent(`chrome-extension://${chrome.runtime.id}/`);
+    chrome.tabs
+      .create({
+        url: `chrome://settings/content/siteDetails?site=${site}`,
+        active: true,
+      })
+      .catch(() => {});
   }
 
   showMicrophoneDenied() {
@@ -428,28 +461,6 @@ class SpeechToTextPro {
     this.instructions.style.display = "flex";
     this.status.textContent = this.pack.errMicDetail;
     this.updateUIStatus("error", this.pack.errMic);
-  }
-
-  /**
-   * Ask for microphone on the side-panel origin while the user is still on
-   * the page tab that hosts the panel. Chrome attaches the prompt to that UI.
-   */
-  async requestMicrophoneFromPanel() {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      return false;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-      this.microphoneAccessGranted = true;
-      chrome.storage.local
-        .set({ microphoneAccessGranted: true })
-        .catch(() => {});
-      return true;
-    } catch (e) {
-      this.microphoneAccessGranted = false;
-      return false;
-    }
   }
 
   async startRecording() {
@@ -468,16 +479,12 @@ class SpeechToTextPro {
     this.finalTranscript = this.output.value;
     this.interimTranscript = "";
     this.isPaused = false;
+    this.pendingStartAfterMic = true;
     this.updateUIStatus("preparing", this.pack.statusMicWait);
     this.instructions.style.display = "none";
     this.saveSettings();
 
-    const micOk = await this.requestMicrophoneFromPanel();
-    if (!micOk) {
-      this.showMicrophoneDenied();
-      return;
-    }
-
+    // Always auto-create the leftmost recorder tab — no manual open.
     this.postToBackground({
       type: "startRecording",
       language: this.currentLanguage,
@@ -502,14 +509,9 @@ class SpeechToTextPro {
     this.currentLanguage = this.languageSelect.value;
     this.finalTranscript = this.output.value;
     this.interimTranscript = "";
+    this.pendingStartAfterMic = true;
     this.updateUIStatus("preparing", this.pack.statusMicWait);
     this.saveSettings();
-
-    const micOk = await this.requestMicrophoneFromPanel();
-    if (!micOk) {
-      this.showMicrophoneDenied();
-      return;
-    }
 
     this.postToBackground({
       type: "resumeRecording",
