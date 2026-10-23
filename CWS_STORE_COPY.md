@@ -10,7 +10,7 @@ Local package copy (in-extension link only): `privacy.html`.
 
 ## Single purpose statement
 
-Voice to Text Pro converts the user’s speech into text in the Chrome Side Panel, lets them edit the draft, and inserts that text into a field they choose on the current page.
+Convert speech to text in the Chrome Side Panel and insert the resulting draft into a page field chosen by the user.
 
 ## Permission justifications
 
@@ -20,7 +20,9 @@ Used only when the user invokes the extension (side-panel Insert, keyboard comma
 
 ### scripting
 
-Used only after an explicit user gesture (Insert in the side panel or “paste transcript” in the context menu) to inject `i18n.js` and `content.js` into that tab when they are not already present, so the draft can be pasted into the focused editable field. There is no permanent `content_scripts` registration and no background inject without a gesture.
+Inject paste helper only after an explicit user gesture (Insert or context-menu paste).
+
+Longer form (if the form allows detail): injects `i18n.js` and `content.js` into that tab only when they are not already present, so the draft can be pasted into the focused editable field. No permanent `content_scripts`; no background inject without a gesture.
 
 ### storage
 
