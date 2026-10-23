@@ -1,14 +1,12 @@
 # Chrome Web Store listing copy (Voice to Text Pro 3.4.1)
 
-## Privacy Policy URL
-
-After you push `main` and enable GitHub Pages (Settings → Pages → Deploy from branch `main` / root):
+## Privacy Policy URL (paste into CWS form)
 
 `https://averixor.github.io/Voice-to-Text-Pro/privacy.html`
 
-Until Pages is live, do not submit the listing with a broken URL.
+Also available at site root: `https://averixor.github.io/Voice-to-Text-Pro/`
 
-Local package copy (not valid for the store field): `privacy.html` inside the extension.
+Local package copy (in-extension link only): `privacy.html`.
 
 ## Single purpose statement
 
@@ -40,9 +38,9 @@ Adds a context-menu item on editable fields to paste the saved draft.
 
 Shows an optional “recording started” notification when recognition begins in the side panel.
 
-### optional_host_permissions (`http://*/*`, `https://*/*`)
+### optional_host_permissions (`http://*/*`, `https://*/*`) — KEEP
 
-Not granted at install. Requested only for the specific site origin when paste inject needs lasting host access beyond the temporary `activeTab` grant (for example Insert from the side panel). The user must approve the Chrome permission prompt. If they deny it, paste fails safely without broader access.
+**Decision:** keep in the manifest. Code calls `chrome.permissions.request({ origins: [originPattern] })` in `background.js` (context-menu paste) and `sidepanel.js` (Insert when inject needs host access). Not granted at install; user approves per origin. Do not remove while those call sites exist.
 
 ## Remote code
 
@@ -54,11 +52,6 @@ The extension does not load or execute remote code. All scripts ship in the pack
 - Text draft and settings: stored locally in `chrome.storage.local`.
 - No first-party analytics or account server.
 
-## Deploy commands (run on a machine with GitHub auth)
+## Deploy status
 
-```bash
-git push -u origin main
-# GitHub → Settings → Pages → Source: Deploy from a branch → main → / (root) → Save
-# Wait ~1 minute, then open:
-# https://averixor.github.io/Voice-to-Text-Pro/privacy.html
-```
+GitHub Pages is live from `main` `/` (legacy). Privacy policy HTTPS URL above is verified HTTP 200.

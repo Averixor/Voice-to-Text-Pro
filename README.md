@@ -138,7 +138,7 @@ On first use, accept the in-panel privacy notice before recording. Speech recogn
 - **Drafts:** stored only in `chrome.storage.local` on the device.
 - **Page access:** scripts are injected only after Insert or the context-menu paste action; optional host access may be requested for that site.
 - **In-extension policy:** open `privacy.html` from the side-panel notice (or via `chrome.runtime.getURL("privacy.html")`).
-- **Chrome Web Store:** the listing Privacy Policy field needs a public HTTPS URL — host this policy (or an equivalent page) and paste that URL into the store form.
+- **Chrome Web Store Privacy Policy URL:** `https://averixor.github.io/Voice-to-Text-Pro/privacy.html`
 
 ---
 
